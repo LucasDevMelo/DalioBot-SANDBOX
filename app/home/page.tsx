@@ -160,13 +160,13 @@ export default function HomePage() {
               initial="hidden"
               animate="visible"
             >
-              <motion.h1 variants={itemVariants} className="text-4xl md:text-5xl font-extrabold leading-tight">
+              <motion.h1  className="text-4xl md:text-5xl font-extrabold leading-tight">
                 Meet DalioBot
               </motion.h1>
-              <motion.p variants={itemVariants} className="text-lg text-white/80 mt-4 max-w-md mx-auto md:mx-0">
+              <motion.p className="text-lg text-white/80 mt-4 max-w-md mx-auto md:mx-0">
                 Stop getting lost in spreadsheets. With DalioBot, you can visualize your robot's real performance, understand risks, and discover insights to operate much more safely and efficiently.
               </motion.p>
-              <motion.div variants={itemVariants}>
+              <motion.div >
                 <Link href="#precos" className="mt-8 inline-block bg-white text-purple-600 font-bold px-8 py-4 rounded-lg hover:bg-gray-200 transition-transform hover:scale-105">
                   Get Access
                 </Link>
@@ -242,17 +242,17 @@ export default function HomePage() {
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
             >
-              <motion.div variants={itemVariants} className="flex flex-col items-center">
+              <motion.div className="flex flex-col items-center">
                 <FaUserPlus className="text-5xl text-purple-600" />
                 <h3 className="text-xl font-bold mt-4 text-gray-800">1. Sign Up</h3>
                 <p className="text-gray-600 mt-2">Create your account quickly and get instant access to DalioBot.</p>
               </motion.div>
-              <motion.div variants={itemVariants} className="flex flex-col items-center">
+              <motion.div className="flex flex-col items-center">
                 <FaLink className="text-5xl text-purple-600" />
                 <h3 className="text-xl font-bold mt-4 text-gray-800">2. Upload your backtests</h3>
                 <p className="text-gray-600 mt-2">Upload your results in .csv format. Our platform reads and organizes everything for you.</p>
               </motion.div>
-              <motion.div variants={itemVariants} className="flex flex-col items-center">
+              <motion.div  className="flex flex-col items-center">
                 <FaChartPie className="text-5xl text-purple-600" />
                 <h3 className="text-xl font-bold mt-4 text-gray-800">3. Discover your potential</h3>
                 <p className="text-gray-600 mt-2">Turn raw data into powerful analyses and insights to optimize your strategies.</p>
@@ -274,21 +274,21 @@ export default function HomePage() {
               whileInView="visible"
               viewport={{ once: true, amount: 0.2 }}
             >
-              <motion.div variants={itemVariants} className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
+              <motion.div  className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
                 <p className="italic">"Finally a tool that unifies everything! Daliobot saves me hours every week."</p>
                 <div className="flex items-center mt-4">
                   <Image src="/James.jpg" width={40} height={40} alt="James S." className="rounded-full" />
                   <div className="ml-4"> <p className="font-bold">James S.</p> <p className="text-sm opacity-80">Individual Investor</p> </div>
                 </div>
               </motion.div>
-              <motion.div variants={itemVariants} className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
+              <motion.div className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
                 <p className="italic">"The interface is beautiful and super intuitive. It feels like it was made for normal people, not experts."</p>
                 <div className="flex items-center mt-4">
                   <Image src="/LukasM.jpg" width={40} height={40} alt="Lukas M." className="rounded-full" />
                   <div className="ml-4"> <p className="font-bold">Lukas M.</p> <p className="text-sm opacity-80">Software Engineer</p> </div>
                 </div>
               </motion.div>
-              <motion.div variants={itemVariants} className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
+              <motion.div  className="bg-white/10 p-6 rounded-lg backdrop-blur-sm">
                 <p className="italic">"The risk analysis feature is fantastic. It helped me rebalance my portfolio and sleep more soundly."</p>
                 <div className="flex items-center mt-4">
                   <Image src="/Antoine.jpg" width={40} height={40} alt="Antoine D." className="rounded-full" />
