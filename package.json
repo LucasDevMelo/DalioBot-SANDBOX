@@ -1,0 +1,47 @@
+{
+  "name": "botspot-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@paddle/paddle-node-sdk": "^3.2.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "autoprefixer": "^10.4.14",
+    "axios": "^1.8.4",
+    "chart.js": "^4.4.9",
+    "clsx": "^1.2.1",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
+    "filesize": "^10.1.6",
+    "firebase": "^11.6.1",
+    "firebase-admin": "^13.4.0",
+    "formidable": "^3.5.3",
+    "framer-motion": "^12.23.12",
+    "lucide-react": "^0.525.0",
+    "next": "latest",
+    "papaparse": "^5.5.2",
+    "postcss": "^8.4.21",
+    "raw-body": "^3.0.0",
+    "react": "latest",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "latest",
+    "react-dropzone": "^14.3.8",
+    "react-icons": "^5.5.0",
+    "react-number-format": "^5.4.4",
+    "recharts": "^2.15.3",
+    "tailwindcss": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.14.1",
+    "@types/react": "19.1.2",
+    "eslint": "latest",
+    "eslint-config-next": "latest"
+  }
+}
