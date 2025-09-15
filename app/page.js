@@ -1,11 +1,10 @@
 'use client';
 
-import { useAuth } from '@/src/context/authcontext';
-import LoginPage from '../app/login/page';
 import HomePage from './welcome/page';
 
 export default function Home() {
-  const { user } = useAuth();
-
-  return user ? <HomePage /> : <LoginPage />;
+  // O roteamento e a verificação de autenticação já são tratados
+  // no componente RootLayout. Se o usuário estiver logado, ele
+  // chegará a esta página. Se não estiver, será redirecionado para o login.
+  return <HomePage />;
 }
