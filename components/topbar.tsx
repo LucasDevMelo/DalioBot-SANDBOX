@@ -10,6 +10,10 @@ export default function Topbar() {
         <h1 className="text-2xl font-bold text-center sm:text-left">
           Dalio<span className="text-black bg-white px-1 rounded">Bot</span>
         </h1>
+        {/* Adicionado o badge "Beta Edition" */}
+        <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-white bg-purple-500 rounded-full">
+          Beta Version
+        </span>
       </div>
 
       {/* Espaço para ícones ou botões no futuro */}

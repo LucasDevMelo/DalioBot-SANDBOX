@@ -7,8 +7,6 @@ import { getDatabase, ref, get } from 'firebase/database';
 import { useAuth } from '@/src/context/authcontext';
 import { useRouter } from 'next/navigation';
 import { LineChart, Lock } from 'lucide-react';
-import UpgradeModal from '@/src/components/UpgradeModal';
-import { getPlanNameFromPriceId } from '@/src/utils/paddleUtils';
 
 // --- INTERFACES AND TYPES ---
 type Robo = {
@@ -34,7 +32,9 @@ function LoadingSpinner() {
   );
 }
 
-function AccessDeniedGate({ message, onUpgradeClick }: { message: string; onUpgradeClick: () => void }) {
+// The access denied component was simplified for the beta version
+function AccessDeniedGate({ message }: { message: string }) {
+  const router = useRouter();
   return (
     <main className="flex-1 w-full p-4 sm:p-6 flex flex-col justify-center items-center">
       <div className="bg-white p-8 rounded-2xl shadow-md border max-w-md w-full text-center">
@@ -42,10 +42,10 @@ function AccessDeniedGate({ message, onUpgradeClick }: { message: string; onUpgr
         <h2 className="mt-4 text-xl font-bold text-gray-800">Restricted Access</h2>
         <p className="mt-2 text-gray-600">{message}</p>
         <button
-          onClick={onUpgradeClick}
+          onClick={() => router.push('/login')}
           className="mt-6 inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
         >
-          Upgrade
+          Login
         </button>
       </div>
     </main>
@@ -130,32 +130,19 @@ const RoboTableDesktop = ({ robos, onSimulate }: { robos: Robo[]; onSimulate: (r
 
 // --- MAIN PAGE ---
 export default function MontecarloPage() {
-  const { user, loading: authLoading, subscription } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [sidebarAberta, setSidebarAberta] = useState(false);
   const [robos, setRobos] = useState<Robo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [quantidadeSimulacoes, setQuantidadeSimulacoes] = useState(100);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
-  // Limits per plan
-  const PLAN_LIMITS = {
-    starter: { maxSimulations: 0, name: 'Starter' },
-    basic: { maxSimulations: 500, name: 'Basic' },
-    pro: { maxSimulations: 1500, name: 'Pro' },
-  };
+  // Remove plan and limit logic, now it's all for the BETA
+  const MAX_SIMULATIONS_BETA = 1500;
 
-  const userPlanName = getPlanNameFromPriceId(subscription?.planName) || 'starter';
-  const currentPlanLimits = PLAN_LIMITS[userPlanName as keyof typeof PLAN_LIMITS];
-
-  // Unlocks Monte Carlo if PRO is active or if the plan has simulations available
-
-  const canUseMonteCarlo =
-    userPlanName === 'pro' && subscription?.isActive === true;
   useEffect(() => {
     if (authLoading) return;
-
-    if (!user || !canUseMonteCarlo) {
+    if (!user) {
       setCarregando(false);
       setRobos([]);
       return;
@@ -191,16 +178,17 @@ export default function MontecarloPage() {
     };
 
     fetchRobos();
-  }, [user, authLoading, canUseMonteCarlo]);
+  }, [user, authLoading]);
 
   const handleVerSimulacao = (robo: Robo) => {
     if (quantidadeSimulacoes <= 0) {
       alert('Please enter a valid number of simulations (greater than 0).');
       return;
     }
-    if (quantidadeSimulacoes > currentPlanLimits.maxSimulations) {
-      alert(`Your ${currentPlanLimits.name} plan allows a maximum of ${currentPlanLimits.maxSimulations} simulations.`);
-      setQuantidadeSimulacoes(currentPlanLimits.maxSimulations);
+    // We removed the plan check and are now using the beta version limit
+    if (quantidadeSimulacoes > MAX_SIMULATIONS_BETA) {
+      alert(`In the beta version, you can simulate a maximum of ${MAX_SIMULATIONS_BETA} simulations.`);
+      setQuantidadeSimulacoes(MAX_SIMULATIONS_BETA);
       return;
     }
     router.push(`/montecarlosimulation?robo=${encodeURIComponent(robo.nome)}&simulacoes=${quantidadeSimulacoes}`);
@@ -208,95 +196,79 @@ export default function MontecarloPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-        <Topbar />
-        <div className="md:hidden p-2 bg-white shadow-md z-40 sticky top-0">
-            <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-700 font-bold text-xl">
-                ☰
-            </button>
+      <Topbar />
+      <div className="md:hidden p-2 bg-white shadow-md z-40 sticky top-0">
+        <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-700 font-bold text-xl">
+          ☰
+        </button>
+      </div>
+      <div className="flex flex-1">
+        <div className={`fixed md:static z-30 transition-transform duration-300 transform bg-white shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+          <Sidebar />
         </div>
-        <div className="flex flex-1">
-            <div className={`fixed md:static z-30 transition-transform duration-300 transform bg-white shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-                <Sidebar />
+
+        {/* --- CORRECTED RENDERING LOGIC --- */}
+
+        {authLoading ? (
+          <main className="flex-1 w-full p-4 sm:p-6 flex flex-col">
+            <LoadingSpinner />
+          </main>
+        ) : !user ? (
+          <AccessDeniedGate
+            message="You must be logged in to access the Monte Carlo Simulation."
+          />
+        ) : (
+          <main className="flex-1 w-full p-4 sm:p-6 flex flex-col">
+            <header className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">Monte Carlo Simulation</h1>
+              <p className="text-gray-500 mt-1">Stress test your strategies to check their robustness.</p>
+              <div className="mt-2 text-sm text-purple-800 bg-purple-50 border border-purple-200 rounded-md p-2">
+                You are on the BETA version. The simulation is **fully unlocked** for your robot!
+              </div>
+            </header>
+
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm flex-1 flex flex-col">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6">
+                <div>
+                  <label htmlFor="simulations" className="font-medium text-gray-700 flex items-center gap-2">
+                    Number of Simulations:
+                  </label>
+                  <input
+                    id="simulations"
+                    type="number"
+                    min={1}
+                    max={MAX_SIMULATIONS_BETA}
+                    value={quantidadeSimulacoes}
+                    onChange={(e) => setQuantidadeSimulacoes(Number(e.target.value))}
+                    className="border border-gray-300 rounded-md p-2 w-32 text-black focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Max: {MAX_SIMULATIONS_BETA}</p>
+                </div>
+              </div>
+
+              {carregando ? (
+                <LoadingSpinner />
+              ) : robos.length === 0 ? (
+                <div className="text-center text-gray-500 my-10 p-6 border-2 border-dashed rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-800">No robots found.</h3>
+                  <p className="text-sm mt-2">
+                    Go to page <a href="/robots" className="text-purple-600 hover:underline font-medium">My robots</a> to add a strategy.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex-1">
+                  <RoboTableDesktop robos={robos} onSimulate={handleVerSimulacao} />
+                  <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {robos.map((robo) => (
+                      <RoboCardMobile key={robo.nome} robo={robo} onSimulate={handleVerSimulacao} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-
-            {/* --- INÍCIO DA LÓGICA DE RENDERIZAÇÃO ATUALIZADA --- */}
-
-            {authLoading ? (
-                // ESTADO 1: Carregando dados de autenticação
-                <main className="flex-1 w-full p-4 sm:p-6 flex flex-col">
-                    <LoadingSpinner />
-                </main>
-            ) : canUseMonteCarlo ? (
-                // ESTADO 2: Acesso permitido, mostra o conteúdo principal
-                <main className="flex-1 w-full p-4 sm:p-6 flex flex-col">
-                    <header className="mb-6">
-                        <h1 className="text-3xl font-bold text-gray-900">Monte Carlo Simulation</h1>
-                        <p className="text-gray-500 mt-1">Stress test your strategies to check their robustness.</p>
-                        <div className="mt-2 text-sm text-purple-800 bg-purple-50 border border-purple-200 rounded-md p-2">
-                            You are on the <strong>{currentPlanLimits.name}</strong> plan. Simulations limit: {currentPlanLimits.maxSimulations}.
-                        </div>
-                    </header>
-
-                    <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm flex-1 flex flex-col">
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6">
-                            <div>
-                                <label htmlFor="simulations" className="font-medium text-gray-700 flex items-center gap-2">
-                                    Number of Simulations:
-                                </label>
-                                <input
-                                    id="simulations"
-                                    type="number"
-                                    min={1}
-                                    max={currentPlanLimits.maxSimulations}
-                                    value={quantidadeSimulacoes}
-                                    onChange={(e) => setQuantidadeSimulacoes(Number(e.target.value))}
-                                    className="border border-gray-300 rounded-md p-2 w-32 text-black focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition mt-1"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Max: {currentPlanLimits.maxSimulations}</p>
-                            </div>
-                        </div>
-
-                        {carregando ? (
-                            <LoadingSpinner />
-                        ) : robos.length === 0 ? (
-                            <div className="text-center text-gray-500 my-10 p-6 border-2 border-dashed rounded-lg">
-                                <h3 className="text-lg font-semibold text-gray-800">No robots found.</h3>
-                                <p className="text-sm mt-2">
-                                    Go to page <a href="/robots" className="text-purple-600 hover:underline font-medium">My robots</a> to add a strategy.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="flex-1">
-                                <RoboTableDesktop robos={robos} onSimulate={handleVerSimulacao} />
-                                <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {robos.map((robo) => (
-                                        <RoboCardMobile key={robo.nome} robo={robo} onSimulate={handleVerSimulacao} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </main>
-            ) : subscription?.isActive === false ? (
-                // ESTADO 3: Acesso negado PORQUE a assinatura está inativa
-                <AccessDeniedGate
-                    message="Your plan is not active, click the button to renew your subscription."
-                    onUpgradeClick={() => setIsUpgradeModalOpen(true)}
-                />
-            ) : (
-                // ESTADO 4: Acesso negado PORQUE o plano está incorreto
-                <AccessDeniedGate
-                    message={`You are in the plan ${currentPlanLimits.name}. This feature is only available for the Pro plan.`}
-                    onUpgradeClick={() => setIsUpgradeModalOpen(true)}
-                />
-            )}
-            {/* --- FIM DA LÓGICA DE RENDERIZAÇÃO ATUALIZADA --- */}
-            
-        </div>
-        <UpgradeModal
-            isOpen={isUpgradeModalOpen}
-            onClose={() => setIsUpgradeModalOpen(false)}
-        />
+          </main>
+        )}
+      </div>
     </div>
-);
+  );
 }

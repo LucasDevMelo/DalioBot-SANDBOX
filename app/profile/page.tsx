@@ -9,15 +9,13 @@ import { doc, getDoc } from 'firebase/firestore';
 import {
     signOut,
     onAuthStateChanged,
-    sendPasswordResetEmail,
-    deleteUser
+    sendPasswordResetEmail
 } from 'firebase/auth';
 
 // Importing icons
 import {
     UserCircleIcon,
     EnvelopeIcon,
-    CalendarDaysIcon,
     ShieldCheckIcon,
     ArrowRightOnRectangleIcon,
     ExclamationTriangleIcon,
@@ -33,104 +31,14 @@ const LoadingSpinner = () => (
     </div>
 );
 
-// Component for the subscription status badge
-const StatusBadge = ({ isActive }) => {
-    const baseClasses = "px-2.5 py-0.5 text-xs font-semibold rounded-full inline-block";
-    const status = isActive
-        ? { text: "Active", classes: "bg-green-100 text-green-800" }
-        : { text: "Inactive", classes: "bg-gray-100 text-gray-800" };
-
-    return <span className={`${baseClasses} ${status.classes}`}>{status.text}</span>;
-};
-
 // Function to format the date
-const formatDate = (dateObject) => {
-    if (!dateObject) return "N/A";
-    return new Date(dateObject).toLocaleDateString('en-US', {
+const formatDate = (date) => {
+    if (!date) return "N/A";
+    return date.toLocaleDateString('en-US', {
         day: '2-digit',
         month: 'long',
         year: 'numeric',
     });
-};
-
-// --- IMPROVED COMPONENT FOR SUBSCRIPTION DATE ---
-const SubscriptionDateInfo = ({ assinatura }) => {
-    if (!assinatura) return null;
-
-    const { ativa, dataFim, nomePlano } = assinatura;
-
-    // Explicitly check for a lifetime plan
-    if (nomePlano && nomePlano.toLowerCase().includes('lifetime')) {
-        return (
-            <div>
-                <p className="text-sm text-gray-500">Duration</p>
-                <p className="font-medium text-gray-800">Lifetime</p>
-            </div>
-        );
-    }
-    
-    if (!dataFim) return null; // Can't show date info if no date exists
-
-    const now = new Date();
-    const endDate = new Date(dataFim);
-    let labelText = '';
-
-    if (ativa) {
-        // Active subscription: it's a renewal date
-        labelText = 'Renews on';
-    } else {
-        // Inactive subscription: check if it's expired or will expire
-        if (endDate < now) {
-            labelText = 'Expired on';
-        } else {
-            labelText = 'Access available until';
-        }
-    }
-
-    return (
-        <div>
-            <p className="text-sm text-gray-500">{labelText}</p>
-            <p className="font-medium text-gray-800">{formatDate(endDate)}</p>
-        </div>
-    );
-};
-
-
-// --- MAPPING AND CALCULATION LOGIC ---
-
-// Function to map the plan ID to a readable name
-const mapPlanIdToName = (planId) => {
-    const planMap = {
-        'pri_01k2031dkdfgv543j9mqexxsx1': 'Basic Plan (Monthly)',
-        'pri_01k2030km2r709jt8ahcb2w3pr': 'Basic Plan (Annual)',
-        'pri_01k202xz8xr4xkcem4s29rp2hc': 'Pro Plan (Monthly)',
-        'pri_01k202ws5vhw8yd3fts8y8jw66': 'Pro Plan (Annual)',
-        'pri_01k2032px4vc7nvy9vvrct6dhe': 'Pro Plan (Lifetime)',
-    };
-    return planMap[planId] || "Unknown Plan";
-};
-
-// Function to calculate the expiration date based on the plan
-const calculateExpirationDate = (creationTimestamp, planId) => {
-    if (!creationTimestamp) return null;
-    const creationDate = creationTimestamp.toDate();
-    
-    const annualPlans = ['pri_01k2030km2r709jt8ahcb2w3pr', 'pri_01k202ws5vhw8yd3fts8y8jw66'];
-    const monthlyPlans = ['pri_01k2031dkdfgv543j9mqexxsx1', 'pri_01k202xz8xr4xkcem4s29rp2hc'];
-    const lifetimePlans = ['pri_01k2032px4vc7nvy9vvrct6dhe'];
-
-    if (annualPlans.includes(planId)) {
-        creationDate.setFullYear(creationDate.getFullYear() + 1);
-        return creationDate;
-    }
-    if (monthlyPlans.includes(planId)) {
-        creationDate.setMonth(creationDate.getMonth() + 1);
-        return creationDate;
-    }
-    if (lifetimePlans.includes(planId)) {
-        return null;
-    }
-    return null;
 };
 
 // --- MAIN PAGE COMPONENT ---
@@ -156,18 +64,7 @@ export default function PerfilPage() {
                             uid: currentUser.uid,
                             nome: data.nome,
                             email: data.email,
-                            assinatura: null
                         };
-
-                        if (data.plano && data.hasOwnProperty('assinaturaAtiva')) {
-                            const expirationDate = calculateExpirationDate(data.criadoEm, data.plano);
-                            userProfile.assinatura = {
-                                ativa: data.assinaturaAtiva,
-                                nomePlano: mapPlanIdToName(data.plano),
-                                dataFim: expirationDate,
-                                portalClienteUrl: data.paddleCustomerPortal || null
-                            };
-                        }
                         setProfile(userProfile);
                     } else {
                         setError("Profile not found in the database.");
@@ -202,14 +99,6 @@ export default function PerfilPage() {
         } catch (error) {
             console.error("Error sending password reset email:", error);
             setError("Could not send the email. Please try again later.");
-        }
-    };
-
-    const handleManageSubscription = () => {
-        if (profile?.assinatura?.portalClienteUrl) {
-            router.push(profile.assinatura.portalClienteUrl);
-        } else {
-            alert("Management URL not found.");
         }
     };
 
@@ -263,55 +152,24 @@ export default function PerfilPage() {
                                     </div>
                                 </div>
 
-                                {/* Card: My Subscription (IMPROVED) */}
-                                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                                    <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
+                                {/* Card: Beta Status */}
+                                <div className="bg-purple-50 p-6 rounded-xl shadow-sm border border-purple-200">
+                                    <h2 className="text-xl font-semibold text-purple-700 mb-4 flex items-center">
                                         <SparklesIcon className="w-6 h-6 mr-2 text-purple-600" />
-                                        My Subscription
+                                        Beta Access
                                     </h2>
-                                    {profile.assinatura ? (
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-sm text-gray-500">Current Plan</p>
-                                                    <p className="font-medium text-gray-800 text-lg">{profile.assinatura.nomePlano}</p>
-                                                </div>
-                                                <StatusBadge isActive={profile.assinatura.ativa} />
-                                            </div>
-                                            {/* ===== MODIFICATION START ===== */}
-                                            <div className="flex items-center">
-                                                <CalendarDaysIcon className="w-5 h-5 mr-3 text-gray-400" />
-                                                <SubscriptionDateInfo assinatura={profile.assinatura} />
-                                            </div>
-                                            {/* ===== MODIFICATION END ===== */}
-
-                                            {profile.assinatura.portalClienteUrl === "VITALICIO" ? (
-                                                <div className="border-t pt-4 mt-4 text-center">
-                                                    <p className="text-green-700 font-semibold">
-                                                        Lifetime plan does not require management 🎉
-                                                    </p>
-                                                </div>
-                                            ) : profile.assinatura.portalClienteUrl ? (
-                                                <div className="border-t pt-4 mt-4">
-                                                    <button
-                                                        onClick={handleManageSubscription}
-                                                        className="w-full px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
-                                                    >
-                                                        Manage Subscription and Invoices
-                                                    </button>
-                                                    <p className="text-center text-sm text-gray-500 mt-2">
-                                                        You will be redirected to our payment portal to change your plan,
-                                                        update payment details, or cancel your subscription.
-                                                    </p>
-                                                </div>
-                                            ) : null}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-sm text-purple-500">Plan</p>
+                                            <p className="font-medium text-purple-800">Free Beta Access</p>
                                         </div>
-                                    ) : (
-                                        <p className="text-gray-600">You do not have an active subscription.</p>
-                                    )}
+                                        <div>
+                                            <p className="text-sm text-purple-500">Status</p>
+                                            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full inline-block bg-purple-200 text-purple-800">Active</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                {/* Other cards remain the same... */}
                                 {/* Card: Security */}
                                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                                     <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">

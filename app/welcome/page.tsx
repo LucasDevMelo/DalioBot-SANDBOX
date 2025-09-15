@@ -13,41 +13,47 @@ const cards = [
         description: 'Robustly project the risk of your strategies, using the same statistical methods as institutional investors.',
         image: 'home1.svg',
         path: '/montecarlo',
+        betaAvailable: true,
     },
     {
         title: 'Simulated Returns Distribution',
         description: 'Visualize the distribution of returns from Monte Carlo simulations to understand the probability of gains and losses.',
         image: 'home4.svg',
         path: '/montecarlo',
+        betaAvailable: true,
     },
     {
         title: 'Enhance your portfolio',
         description: 'Use the robust portfolio builder to get the best version of your portfolio',
         image: 'home3.svg',
         path: '/optimizer',
+        betaAvailable: false, // Alterado: Não disponível na Beta
     },
     {
-        title: 'Portfolio Stagnation Analysis',
+        title: 'Consistency analysis',
         description: 'Measure how long your portfolio has gone without reaching new highs and assess the consistency of returns over time.',
         image: 'home5.svg',
         path: '/portfolios',
+        betaAvailable: false, // Alterado: Não disponível na Beta
     },
     {
         title: 'Track Record',
         description: 'Monitor the track record of all bots. Keep an organized history of your operations.',
         image: 'home2.svg',
         path: '/montecarlo',
+        betaAvailable: true,
     },
     {
         title: 'Mapping Negative Periods',
         description: 'Identify losing months, quarters, and years, making it easier to assess risk across different time horizons.',
         image: 'home6.svg',
-        path: '/robos',
+        path: '/robots',
+        betaAvailable: true,
     },
 ];
 
-
-function Card({ title, description, image, path }: { title: string; description: string; image: string; path: string }) {
+// Adicionada a nova prop `betaAvailable`
+function Card({ title, description, image, path, betaAvailable }: { title: string; description: string; image: string; path: string; betaAvailable: boolean }) {
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow duration-300 w-72 flex flex-col h-full">
             <div className="bg-purple-100 flex justify-center items-center h-40">
@@ -57,11 +63,18 @@ function Card({ title, description, image, path }: { title: string; description:
                 <h3 className="text-md font-semibold text-gray-800">{title}</h3>
                 <p className="text-sm text-gray-600 mt-2 flex-grow">{description}</p>
                 <div className="mt-4">
-                    <Link href={path}>
-                        <button className="px-4 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
-                            Access
-                        </button>
-                    </Link>
+                    {/* Alterado: Renderização condicional para o botão */}
+                    {betaAvailable ? (
+                        <Link href={path}>
+                            <button className="px-4 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
+                                Access
+                            </button>
+                        </Link>
+                    ) : (
+                        <span className="text-purple-600 font-semibold text-sm">
+                            Not available in Beta version
+                        </span>
+                    )}
                 </div>
             </div>
         </div>
@@ -145,9 +158,7 @@ export default function HomePage() {
                 }
             } catch (error) {
                 console.error("Failed to fetch page data:", error);
-                // Opcional: tratar o erro, talvez mostrando uma mensagem
             } finally {
-                // ESTE BLOCO SEMPRE SERÁ EXECUTADO, APÓS O TRY OU O CATCH
                 setIsLoading(false);
             }
         });
@@ -184,14 +195,10 @@ export default function HomePage() {
                                             {/* Bloco "Meus dados" */}
                                             <div className="w-fit mx-auto mb-12">
                                                 <h2 className="text-xl font-bold text-black mb-4">My data</h2>
-                                                {/* ALTERADO: Estrutura de grid principal com 3 colunas em desktop.
-                                        - A primeira div (coluna da esquerda) ocupa 1 coluna.
-                                        - A segunda div (área da direita) ocupa 2 colunas (md:col-span-2).
-                                    */}
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
 
                                                     {/* COLUNA DA ESQUERDA: Cards de contagem */}
-                                                    <div className="flex flex-col gap-y-10"> {/* <-- ALTERADO AQUI */}
+                                                    <div className="flex flex-col gap-y-10">
                                                         <div className="bg-white p-4 rounded shadow">
                                                             <h3 className="text-gray-500 text-sm font-medium">Backtests</h3>
                                                             <p className="text-3xl font-bold text-gray-800">{backtestCount}</p>
@@ -261,7 +268,6 @@ export default function HomePage() {
                         </div>
                     )}
                 </main>
-
             </div>
         </div>
     );

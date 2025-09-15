@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { auth, db } from '@/src/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -6,27 +7,25 @@ import { doc, setDoc } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function CadastroPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const plan = searchParams.get('plan');
+    const router = useRouter();
+    // REMOVIDO: const searchParams = useSearchParams();
+    // REMOVIDO: const plan = searchParams.get('plan');
 
-  // --- Estados do Componente ---
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [confirmarSenha, setConfirmarSenha] = useState('');
-  const [aceitouTermos, setAceitouTermos] = useState(false);
+    // --- Estados do Componente ---
+    const [nome, setNome] = useState('');
+    const [email, setEmail] = useState('');
+    const [senha, setSenha] = useState('');
+    const [confirmarSenha, setConfirmarSenha] = useState('');
+    const [aceitouTermos, setAceitouTermos] = useState(false);
 
-  // Estados para feedback ao usuário
-  const [erro, setErro] = useState('');
-  const [sucesso, setSucesso] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [mostrarTermos, setMostrarTermos] = useState(false);
+    // Estados para feedback ao usuário
+    const [erro, setErro] = useState('');
+    const [sucesso, setSucesso] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [mostrarTermos, setMostrarTermos] = useState(false);
+    const [cadastroConcluido, setCadastroConcluido] = useState(false);
 
-  // NOVO ESTADO: Controla a UI para evitar o redirecionamento automático
-  const [cadastroConcluido, setCadastroConcluido] = useState(false);
-
-  const handleCadastro = async () => {
+    const handleCadastro = async () => {
         setErro('');
         setSucesso('');
 
@@ -46,53 +45,27 @@ export default function CadastroPage() {
 
         setIsLoading(true);
 
-    try {
+        try {
             // --- STEP 1: Create user in Firebase Authentication ---
             const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
             const user = userCredential.user;
 
             await updateProfile(user, { displayName: nome });
 
-            // --- STEP 2: Create initial document in Firestore ---
+            // --- STEP 2: Create initial document in Firestore for BETA plan ---
             await setDoc(doc(db, 'users', user.uid), {
                 nome: nome,
                 email: user.email,
-                plano: plan || null,
-                assinaturaAtiva: false,
+                plano: 'beta', // ADICIONADO: Define o plano como 'beta'
+                assinaturaAtiva: true, // ADICIONADO: Considera a assinatura como ativa durante a beta
                 criadoEm: new Date()
             });
 
-            // --- STEP 3: THE REDIRECTION FIX ---
+            // --- STEP 3: Redirection to the Welcome page for beta users ---
             setCadastroConcluido(true);
             setIsLoading(false);
-
-            if (!plan) {
-                setSucesso('Account created successfully! You will be redirected to your profile.');
-                setTimeout(() => router.push('/profile'), 2000);
-                return;
-            }
-
-            setSucesso('Account created! Opening the secure payment portal...');
-
-            // --- STEP 4: CALL PADDLE DIRECTLY ---
-            if (typeof window !== 'undefined' && (window as any).Paddle) {
-                (window as any).Paddle.Checkout.open({
-                    items: [{ priceId: plan, quantity: 1 }],
-                    customData: {
-                        firebaseUid: user.uid,
-                        userEmail: user.email,
-                    },
-                    eventCallback: (data: any) => {
-                        if (data.name === 'checkout.closed') {
-                            setSucesso('Payment process finished. Redirecting to your profile...');
-                            router.push('/welcome');
-                        }
-                    }
-                });
-            } else {
-                console.error('Paddle.js is not available. Cannot open checkout.');
-                setErro('Could not start the payment process. Please reload the page.');
-            }
+            setSucesso('Account created successfully! You will be redirected to the platform.');
+            setTimeout(() => router.push('/welcome'), 2000);
 
         } catch (error: any) {
             console.error('Error during sign-up:', error);
@@ -105,7 +78,7 @@ export default function CadastroPage() {
         }
     };
 
-  return (
+    return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-purple-500 px-4 sm:px-6">
             {/* Logo */}
             <h1 className="text-3xl sm:text-4xl font-bold text-white mb-10 sm:mb-12 text-center">
@@ -115,7 +88,6 @@ export default function CadastroPage() {
 
             {/* Registration Card with Conditional Logic */}
             <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl w-full max-w-xs sm:max-w-md space-y-4 transition-all duration-300">
-
                 {!cadastroConcluido ? (
                     // --- STATE 1: SHOW REGISTRATION FORM ---
                     <>
@@ -138,7 +110,7 @@ export default function CadastroPage() {
                         </label>
 
                         <button onClick={handleCadastro} disabled={isLoading} className="w-full bg-black text-white px-4 py-2.5 rounded-md font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base">
-                            {isLoading ? 'Creating account...' : 'Create Account and Continue'}
+                            {isLoading ? 'Creating account...' : 'Create Account'}
                         </button>
 
                         <p className="text-xs sm:text-sm text-center text-gray-600">
@@ -151,24 +123,21 @@ export default function CadastroPage() {
                     <div className="text-center py-4">
                         <h2 className="text-2xl font-bold text-gray-800">Account Created!</h2>
                         <p className="text-gray-600 mt-2">
-                            The secure payment portal has been opened. Follow the instructions to activate your plan.
+                            Welcome to DalioBot Beta! You will be redirected to the platform shortly.
                         </p>
-                        <p className="text-sm text-gray-500 mt-4">
-                            After making the payment, click the button below to access the platform.
-                        </p>
+                        {sucesso && <p className="text-sm text-green-600 mt-4">{sucesso}</p>}
                         <button
                             onClick={() => router.push('/welcome')}
                             className="mt-6 w-full bg-black text-white px-4 py-2.5 rounded-md font-semibold hover:bg-gray-800 transition-colors text-sm sm:text-base"
                         >
-                            Go to the home screen
+                            Go to the platform
                         </button>
                     </div>
                 )}
 
                 {/* Error and success messages appear in both states */}
                 {erro && <p className="text-red-600 text-xs sm:text-sm text-center bg-red-50 p-2 rounded-md">{erro}</p>}
-                {sucesso && !cadastroConcluido && <p className="text-green-600 text-xs sm:text-sm text-center bg-green-50 p-2 rounded-md">{sucesso}</p>}
-
+                
             </div>
 
             {/* Terms of Use Modal (unchanged) */}
@@ -193,7 +162,7 @@ For a better experience for its Users, BotSpot may, from time to time, partially
 
 5. The site offers no warranty linked to the Platform, or its use, and is not responsible for any damages or losses that result from its use. The use of the Platform and the robots disclosed is the sole responsibility of the user, who must use their own knowledge and techniques to decide on their investments.
 
-Once the desired paid plan is selected, the User will be directed to complete the payment, according to the payment options provided by the Platform at the time of purchase completion. Access to free and paid content will always be provided via Login and Password, after proof of payment according to the modality chosen by the User. The BotSpot website clarifies that it is a platform for analyzing automated trading strategies, not offering or commercializing stocks, financial assets, or financial products, and is not responsible, under any circumstances, for any damage, material or moral, related to the use of the Platform or its content, whether free or paid.`}
+The "Payment Processing" and pricing sections are not applicable to the Beta Version. However, please read our general terms of use, as they apply to the use of all our services.`}
                         </p>
                         <div className="text-right mt-4">
                             <button onClick={() => setMostrarTermos(false)}
