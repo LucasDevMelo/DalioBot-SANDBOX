@@ -32,7 +32,7 @@ interface RoboCardProps {
 }
 
 // ============================================================================
-// INDIVIDUAL ROBOT CARD COMPONENT (Restyled)
+// INDIVIDUAL ROBOT CARD COMPONENT (ATUALIZADO COM OS DOIS BOTÕES)
 // ============================================================================
 const MetricItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) => (
     <div className="flex flex-col items-center text-center">
@@ -74,13 +74,23 @@ const RoboCard = ({ robo }: RoboCardProps) => {
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
+                
+                <div className="mt-auto grid grid-cols-2 gap-2">
+                    <Link
+                        href={`/dashboard?id=${encodeURIComponent(robo.id)}&origem=biblioteca`}
+                        className="bg-purple-600 text-white text-center text-sm font-semibold py-2 px-1 rounded-md hover:bg-purple-700 transition-colors"
+                    >
+                        Details
+                    </Link>
+                    <Link
+                        // ▼▼▼ ROTA ATUALIZADA AQUI ▼▼▼
+                        href={`/daily-analisys?id=${encodeURIComponent(robo.id)}`}
+                        className="border border-purple-600 text-purple-600 text-center text-sm font-semibold py-2 px-1 rounded-md hover:bg-purple-100 transition-colors"
+                    >
+                        Daily Analysis
 
-                <Link
-                    href={`/dashboard?id=${encodeURIComponent(robo.id)}&origem=biblioteca`}
-                    className="bg-purple-600 text-white text-center font-semibold py-2 rounded-md hover:bg-purple-700 transition-colors mt-auto"
-                >
-                    DETAILS
-                </Link>
+                    </Link>
+                </div>
             </CardContent>
         </Card>
     );
