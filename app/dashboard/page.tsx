@@ -35,12 +35,19 @@ interface CsvData {
 
 type Aba = 'resultados' | 'metricasAvancadas';
 
-// Componente para a Tabela de Performance Mensal
-const MonthlyPerformanceTable = ({ data }: { data: { [year: number]: { [month: number]: number } } }) => {
+// Componente COMPLETO para a Tabela de Performance Mensal (versão interativa)
+
+const MonthlyPerformanceTable = ({
+  data,
+  onMonthClick
+}: {
+  data: { [year: number]: { [month: number]: number } };
+  onMonthClick: (year: number, month: number) => void; // Prop para lidar com o clique
+}) => {
   const years = Object.keys(data).map(Number).sort((a, b) => b - a); // Anos em ordem decrescente
-  // Corrigido para português para consistência
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
   if (years.length === 0) {
     return null; // Não renderiza nada se não houver dados
   }
@@ -57,9 +64,8 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
         {/* ================================================================ */}
         <div className="hidden md:block">
           <div className="overflow-x-auto">
-            {/* A div abaixo não precisa mais de um min-w fixo */}
             <div>
-              {/* Cabeçalho com os meses - LARGURA MÍNIMA APLICADA */}
+              {/* Cabeçalho com os meses */}
               <div className="grid grid-cols-[60px_repeat(12,minmax(80px,1fr))] gap-1 text-center font-bold text-sm mb-2">
                 <div>Year</div>
                 {shortMonths.map(month => <div key={month}>{month}</div>)}
@@ -68,7 +74,6 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
               {/* Linhas com os resultados */}
               <div className="space-y-1">
                 {years.map(year => (
-                  // LARGURA MÍNIMA APLICADA AQUI TAMBÉM
                   <div key={year} className="grid grid-cols-[60px_repeat(12,minmax(80px,1fr))] gap-1 text-center text-xs items-center">
                     <div className="font-bold">{year}</div>
                     {shortMonths.map((_, monthIndex) => {
@@ -76,11 +81,16 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
                       const hasValue = typeof value === 'number';
 
                       const cellColor = hasValue
-                        ? (value >= 0 ? 'bg-green-500' : 'bg-red-500')
-                        : 'bg-gray-200';
+                        ? (value >= 0 ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600')
+                        : 'bg-gray-200 cursor-not-allowed';
 
                       return (
-                        <div key={monthIndex} className={`p-3 rounded text-white ${cellColor}`}>
+                        <button
+                          key={monthIndex}
+                          className={`p-3 rounded text-white transition-colors duration-200 ${cellColor}`}
+                          onClick={() => hasValue && onMonthClick(year, monthIndex)}
+                          disabled={!hasValue}
+                        >
                           {hasValue ? (
                             <NumericFormat
                               value={value}
@@ -94,7 +104,7 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
                           ) : (
                             <span className="text-gray-500">-</span>
                           )}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -105,7 +115,7 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
         </div>
 
         {/* ================================================================ */}
-        {/* VISTA PARA MOBILE (lista) - Visível até 'md' (768px)         */}
+        {/* VISTA PARA MOBILE (lista) - Visível até 'md' (768px)       */}
         {/* ================================================================ */}
         <div className="md:hidden">
           {years.map(year => (
@@ -119,7 +129,11 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
                   const textColor = value >= 0 ? 'text-green-600' : 'text-red-600';
 
                   return (
-                    <div key={monthIndex} className="flex justify-between items-center p-2 border-b border-gray-100">
+                    <button
+                      key={monthIndex}
+                      className="flex justify-between items-center p-2 border-b border-gray-100 w-full text-left hover:bg-gray-50 transition-colors"
+                      onClick={() => onMonthClick(year, monthIndex)}
+                    >
                       <span className="text-gray-700">{month}</span>
                       <span className={`font-semibold ${textColor}`}>
                         <NumericFormat
@@ -132,7 +146,7 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
                           prefix="$ "
                         />
                       </span>
-                    </div>
+                    </button>
                   )
                 })}
               </div>
@@ -145,6 +159,68 @@ const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
   );
 };
 
+interface DailyPerformanceTableProps {
+  data: { [day: number]: number };
+  year: number;
+  month: number;
+  onClose: () => void;
+}
+
+const DailyPerformanceTable = ({ data, year, month, onClose }: DailyPerformanceTableProps) => {
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthName = monthNames[month];
+
+  // Pega os dias e os ordena numericamente
+  const sortedDays = Object.keys(data).map(Number).sort((a, b) => a - b);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Daily Results: {monthName} {year}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        </div>
+
+        {/* Cabeçalho da Tabela */}
+        <div className="flex justify-between font-bold text-sm text-gray-600 border-b pb-2 mb-2">
+          <span>Day</span>
+          <span>Result</span>
+        </div>
+
+        {/* Corpo da Tabela (com scroll) */}
+        <div className="overflow-y-auto">
+          {sortedDays.length > 0 ? (
+            <div className="space-y-1">
+              {sortedDays.map(day => {
+                const value = data[day];
+                const textColor = value >= 0 ? 'text-green-600' : 'text-red-600';
+
+                return (
+                  <div key={day} className="flex justify-between items-center p-2 border-b border-gray-100 text-sm">
+                    <span className="text-gray-700">{String(day).padStart(2, '0')}/{String(month + 1).padStart(2, '0')}/{year}</span>
+                    <span className={`font-semibold ${textColor}`}>
+                      <NumericFormat
+                        value={value}
+                        displayType="text"
+                        thousandSeparator="."
+                        decimalSeparator=","
+                        decimalScale={2}
+                        fixedDecimalScale
+                        prefix="$ "
+                      />
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 py-4">No daily data available for this month.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 // ADICIONE ESTE NOVO HOOK AQUI
 function useWindowSize() {
   const [windowSize, setWindowSize] = useState<{ width?: number; height?: number }>({
@@ -183,7 +259,8 @@ function DashboardContent() {
 
 
   const [monthlyPerformanceData, setMonthlyPerformanceData] = useState<{ [year: number]: { [month: number]: number } }>({});
-
+  const [isDailyViewOpen, setIsDailyViewOpen] = useState(false);
+  const [selectedDateForDailyView, setSelectedDateForDailyView] = useState<{ year: number; month: number } | null>(null);
   // Todos os seus estados, useEffects, useMemos, e funções de cálculo permanecem aqui
   // Exemplo:
   const [sidebarAberta, setSidebarAberta] = useState(false);
@@ -378,6 +455,53 @@ function DashboardContent() {
     setDaliobotFactor(Number(fatorCalculado.toFixed(2)));
 
   }, [csvData, saldoInicial]);
+
+const dailyPerformanceData = useMemo(() => {
+  if (csvData.length < 2) return {};
+
+  // 1️⃣ Primeiro, pegamos apenas o último registro de cada dia
+  const dailyEquityMap = new Map<string, number>();
+  csvData.forEach((row) => {
+    const dateObj = new Date(row.DATE);
+    if (isNaN(dateObj.getTime())) return;
+    const dateKey = dateObj.toISOString().split("T")[0]; // yyyy-mm-dd
+    // sempre sobrescreve, então mantém o último equity do dia
+    dailyEquityMap.set(dateKey, row.EQUITY);
+  });
+
+  // 2️⃣ Ordenamos as datas
+  const orderedDates = Array.from(dailyEquityMap.keys()).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  );
+
+  // 3️⃣ Calculamos a variação diária (diferença entre dias consecutivos)
+  const dailyResults: { [year: number]: { [month: number]: { [day: number]: number } } } = {};
+
+  for (let i = 1; i < orderedDates.length; i++) {
+    const currentDate = new Date(orderedDates[i]);
+    const previousDate = new Date(orderedDates[i - 1]);
+    const currentEquity = dailyEquityMap.get(orderedDates[i])!;
+    const previousEquity = dailyEquityMap.get(orderedDates[i - 1])!;
+
+    // só considera se for o mesmo mês e ano
+    if (
+      currentDate.getFullYear() === previousDate.getFullYear() &&
+      currentDate.getMonth() === previousDate.getMonth()
+    ) {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const day = currentDate.getDate();
+      const dailyResult = currentEquity - previousEquity;
+
+      if (!dailyResults[year]) dailyResults[year] = {};
+      if (!dailyResults[year][month]) dailyResults[year][month] = {};
+
+      dailyResults[year][month][day] = dailyResult;
+    }
+  }
+
+  return dailyResults;
+}, [csvData]);
 
 
   useEffect(() => {
@@ -1027,7 +1151,13 @@ function DashboardContent() {
                       </div>
                     </CardContent>
                   </Card>
-                  <MonthlyPerformanceTable data={monthlyPerformanceData} />
+                  <MonthlyPerformanceTable
+                    data={monthlyPerformanceData}
+                    onMonthClick={(year, month) => {
+                      setSelectedDateForDailyView({ year, month });
+                      setIsDailyViewOpen(true);
+                    }}
+                  />
 
                   <Card className="md:col-span-1">
                     <CardHeader className="pb-4">
@@ -1356,9 +1486,6 @@ function DashboardContent() {
             </div>
           )}
 
-
-
-
           {showDrawdownPopup && (
             <div className="fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center p-4">
               <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl">
@@ -1485,6 +1612,14 @@ function DashboardContent() {
                 })()}
               </div>
             </div>
+          )}
+          {isDailyViewOpen && selectedDateForDailyView && (
+            <DailyPerformanceTable
+              data={dailyPerformanceData[selectedDateForDailyView.year]?.[selectedDateForDailyView.month] || {}}
+              year={selectedDateForDailyView.year}
+              month={selectedDateForDailyView.month}
+              onClose={() => setIsDailyViewOpen(false)}
+            />
           )}
         </main>
       </div>
