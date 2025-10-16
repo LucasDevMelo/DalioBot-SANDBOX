@@ -258,7 +258,7 @@ function SimulacaoMonteCarloContent() {
 
     const formatCurrency = (value: number) => {
         if (value === Infinity || value === -Infinity || isNaN(value)) return "N/A";
-        return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
     const formatPercentage = (value: number, digits = 2) => {
         if (value === Infinity || value === -Infinity || isNaN(value)) return "N/A";
