@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/context/authcontext';
 import Topbar from '@/components/topbar';
 import Sidebar from '@/components/sidebar';
-import { getDatabase, ref as dbRefFirebase, get, set, push, remove } from 'firebase/database';
+import { getDatabase, ref, get, set, push, remove } from 'firebase/database';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// Removido: import { getPlanNameFromPriceId } from '@/src/utils/paddleUtils';
 
 // --- Interfaces ---
 interface RobotStrategy {
@@ -47,30 +46,40 @@ interface PortfolioCsvData {
     '<EQUITY>': number;
     '<DEPOSIT LOAD>': number;
 }
-// --- Fim das Interfaces ---
+// --- End of Interfaces ---
 
 const formatNumberForParsing = (numStr: string | number | undefined | null): number => {
     if (numStr === undefined || numStr === null) {
         return NaN;
     }
-
     let s = String(numStr).trim();
     if (s === "") return NaN;
-
     if (s.includes(',')) {
         const brNum = parseFloat(s.replace(/\./g, '').replace(',', '.'));
         if (!isNaN(brNum) && s.includes('.')) {
              return brNum;
         }
     }
-    
     const usNum = parseFloat(s.replace(/,/g, ''));
     return usNum;
 };
 
+// 🔄 Reusable Spinner (Dark Mode)
+function LoadingSpinner({ message }: { message?: string }) {
+    return (
+      <div className="flex flex-1 flex-col justify-center items-center h-full p-8">
+        <svg className="animate-spin h-10 w-10 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {message && <span className="mt-4 text-gray-400">{message}</span>}
+      </div>
+    );
+}
+
 
 function CreatePortfolioContent() {
-    const { user, subscription } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
     const [availableRobots, setAvailableRobots] = useState<RobotStrategy[]>([]);
     const [selectedRobots, setSelectedRobots] = useState<Set<string>>(new Set());
@@ -79,10 +88,9 @@ function CreatePortfolioContent() {
     const [isSimulating, setIsSimulating] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // ✅ ALTERADO: Removemos os limites de planos e definimos limites únicos para a beta.
     const BETA_LIMITS = {
-        maxPortfolios: Infinity, // Sem limite de portfólios salvos na beta
-        maxStrategies: Infinity, // Sem limite de robôs por portfólio na beta
+        maxPortfolios: Infinity,
+        maxStrategies: Infinity,
         name: 'Beta',
     };
 
@@ -93,7 +101,7 @@ function CreatePortfolioContent() {
                 setError(null);
                 try {
                     const db = getDatabase();
-                    const strategiesRef = dbRefFirebase(db, `estrategias/${user.uid}`);
+                    const strategiesRef = ref(db, `estrategias/${user.uid}`);
                     const snapshot = await get(strategiesRef);
                     if (snapshot.exists()) {
                         const strategiesData = snapshot.val();
@@ -122,14 +130,11 @@ function CreatePortfolioContent() {
 
     const toggleRobotSelection = (robotId: string) => {
         setError(null);
-
         setSelectedRobots(prevSelected => {
             const newSelected = new Set(prevSelected);
-            
             if (newSelected.has(robotId)) {
                 newSelected.delete(robotId);
             } else {
-                // ✅ ALTERADO: Removemos a verificação de limite de estratégias, já que é Infinity na beta.
                 newSelected.add(robotId);
             }
             return newSelected;
@@ -139,7 +144,7 @@ function CreatePortfolioContent() {
     const fetchAndProcessRobotDataFromRTDB = async (robotId: string): Promise<ProcessedRobotData[]> => {
         if (!user?.uid) throw new Error("Unauthenticated user to fetch data from robot.");
         const db = getDatabase();
-        const robotDataRef = dbRefFirebase(db, `estrategias/${user.uid}/${robotId}/dadosCSV`);
+        const robotDataRef = ref(db, `estrategias/${user.uid}/${robotId}/dadosCSV`);
         const dataSnapshot = await get(robotDataRef);
 
         if (!dataSnapshot.exists()) {
@@ -236,7 +241,7 @@ function CreatePortfolioContent() {
 
         const sortedUniqueDates = Array.from(allDates).sort();
         if (sortedUniqueDates.length === 0) {
-            console.warn("[aggregatePortfolioData] Nenhuma data encontrada para agregar.");
+            console.warn("[aggregatePortfolioData] No dates found to aggregate.");
             return [];
         }
 
@@ -288,48 +293,35 @@ function CreatePortfolioContent() {
         if (!data || data.length < 2) {
             return { grossProfit: 0, grossLoss: 0, profitFactor: 0 };
         }
-
         let grossProfit = 0;
         let grossLoss = 0;
-
         for (let i = 1; i < data.length; i++) {
             const previousEquity = data[i-1]['<EQUITY>'];
             const currentEquity = data[i]['<EQUITY>'];
             const dailyChange = currentEquity - previousEquity;
-
             if (dailyChange > 0) {
                 grossProfit += dailyChange;
             } else if (dailyChange < 0) {
                 grossLoss += Math.abs(dailyChange);
             }
         }
-
         const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss) : 0;
-
-        return { 
-            grossProfit, 
-            grossLoss, 
-            profitFactor 
-        };
+        return { grossProfit, grossLoss, profitFactor };
     };
 
     const handleSimulatePortfolio = async () => {
-        if (!user?.uid) { setError("Usuário não autenticado"); return; }
-        if (!portfolioName.trim()) { setError("Por favor, dê um nome ao seu portfólio."); return; }
-        if (selectedRobots.size === 0) { setError("Por favor, selecione ao menos um robô."); return; }
+        if (!user?.uid) { setError("User is not authenticated"); return; }
+        if (!portfolioName.trim()) { setError("Please, give your portfolio a name."); return; }
+        if (selectedRobots.size === 0) { setError("Please select at least one robot."); return; }
 
         setIsSimulating(true);
         setError(null);
-
-        // ✅ REMOVIDO: A verificação de limite de portfólios para planos.
-        // A versão beta permite a criação de portfólios ilimitados.
 
         const robotsWithNoData: string[] = [];
         const processingErrors: string[] = [];
 
         try {
             const allRobotsData: Record<string, ProcessedRobotData[]> = {};
-
             for (const robotId of selectedRobots) {
                 try {
                     const robotData = await fetchAndProcessRobotDataFromRTDB(robotId);
@@ -359,9 +351,8 @@ function CreatePortfolioContent() {
             }
 
             const metrics = calculatePortfolioMetrics(portfolioConsolidatedData);
-
             const db = getDatabase();
-            const portfoliosUserRef = dbRefFirebase(db, `portfolios/${user.uid}`);
+            const portfoliosUserRef = ref(db, `portfolios/${user.uid}`);
             const newPortfolioRef = push(portfoliosUserRef);
             const newPortfolioEntry: Omit<Portfolio, 'id'> = {
                 nomePortfolio: portfolioName.trim(),
@@ -390,75 +381,77 @@ function CreatePortfolioContent() {
     
     return (
         <div>
-            <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <h2 className="text-xl font-semibold text-purple-800 mb-1">Simulate Portfolios</h2>
-                <p className="text-sm text-purple-900">
+            <div className="mb-8 p-6 bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg">
+                <h2 className="text-xl font-semibold text-purple-400 mb-2">Simulate Portfolios</h2>
+                <p className="text-sm text-gray-400">
                     Here you can view the statistics of multiple robots running together.
                     Select the strategies you want and click "Simulate Portfolios and View Analysis."
                 </p>
             </div>
-            {/* ✅ ALTERADO: O aviso de limite de planos foi substituído por uma mensagem beta-friendly */}
-            <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
-                <p className="text-green-800 font-bold">
+            
+            <div className="mb-8 p-4 bg-green-900/50 border border-green-700 rounded-lg text-sm">
+                <p className="text-green-300 font-bold">
                     You are on the Beta Version. Create unlimited portfolios and select as many strategies as you want!
                 </p>
             </div>
-            {error && <p className="text-red-500 bg-red-100 p-3 rounded-md mb-4">{error}</p>}
-            <div className="mb-6">
-                <label htmlFor="portfolioName" className="block text-sm font-medium text-gray-700 mb-1">
+
+            {error && <p className="text-red-400 bg-red-900/50 border border-red-500 p-3 rounded-lg mb-6">{error}</p>}
+
+            <div className="mb-8">
+                <label htmlFor="portfolioName" className="block text-sm font-medium text-gray-300 mb-2">
                     Portfolio Name:
                 </label>
                 <input
                     type="text" id="portfolioName" value={portfolioName}
                     onChange={(e) => setPortfolioName(e.target.value)}
-                    className="border border-gray-300 rounded-md shadow-sm p-2 w-full md:w-1/2 focus:ring-purple-500 focus:border-purple-500"
+                    className="bg-slate-800 border border-slate-600 rounded-lg shadow-sm p-2 w-full md:w-1/2 text-gray-200 focus:ring-purple-500 focus:border-purple-500"
                     placeholder="Ex: My Portfolio 1"
                 />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Robots:</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Select Robots:</h3>
+            
             {loadingRobots ? (
-                <div className="flex justify-center items-center h-32">
-                    <svg className="animate-spin h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="ml-2 text-gray-600">Loading robots...</span>
-                </div>
+                <LoadingSpinner message="Loading robots..." />
             ) : availableRobots.length === 0 ? (
-                <p className="text-gray-600 bg-yellow-50 p-3 rounded-md">No robots (strategies) found in your registration.</p>
+                <div className="text-center text-gray-400 p-10 bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg">
+                    <h2 className="text-xl font-semibold text-white mb-2">No robots found</h2>
+                    <p>Go to the "My Robots" page to add a strategy first.</p>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                    {availableRobots.map(robot => {
-                        return (
-                            <Card key={robot.id} className={`transition-all duration-150 ease-in-out ${selectedRobots.has(robot.id) ? 'border-purple-500 border-2 shadow-xl transform scale-105' : 'hover:shadow-md border-gray-200'}`}>
-                                <CardHeader className="pb-2 pt-4 px-4">
-                                    <CardTitle className="text-md text-gray-800">{robot.nomeRobo}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0">
-                                    {robot.mercado && <p className="text-xs text-gray-500 mb-0.5"><strong>Market:</strong> {robot.mercado}</p>}
-                                    {robot.ativo && <p className="text-xs text-gray-500 mb-2"><strong>Asset:</strong> {robot.ativo}</p>}
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleRobotSelection(robot.id)}
-                                        className={`w-full mt-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-400
-                                          ${selectedRobots.has(robot.id)
-                                            ? 'bg-purple-600 text-white hover:bg-purple-700'
-                                            : 'border border-purple-500 text-purple-600 hover:bg-purple-100'}`}
-                                    >
-                                        {selectedRobots.has(robot.id) ? 'Selected ✓' : 'Select'}
-                                    </button>
-                                </CardContent>
-                            </Card>
-                        )
-                    })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    {availableRobots.map(robot => (
+                        <div key={robot.id} className={`bg-slate-800/50 border rounded-2xl shadow-lg transition-all duration-200 ease-in-out cursor-pointer
+                            ${selectedRobots.has(robot.id) 
+                                ? 'border-purple-500 border-2 scale-[1.03] shadow-[0_0_15px_theme(colors.purple.500/40)]' 
+                                : 'border-slate-700 hover:border-slate-500 hover:scale-[1.02]'}`}
+                             onClick={() => toggleRobotSelection(robot.id)}
+                        >
+                            <div className="p-5">
+                                <h4 className="text-md font-semibold text-white truncate mb-3">{robot.nomeRobo}</h4>
+                                <div className="text-xs text-gray-400 space-y-1 mb-4">
+                                    {robot.mercado && <p><strong className="text-gray-300">Market:</strong> {robot.mercado}</p>}
+                                    {robot.ativo && <p><strong className="text-gray-300">Asset:</strong> {robot.ativo}</p>}
+                                </div>
+                                <div
+                                    className={`w-full mt-2 px-3 py-1.5 text-xs font-medium rounded-md text-center transition-colors duration-150 ease-in-out
+                                      ${selectedRobots.has(robot.id)
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-slate-700 text-gray-300'}`}
+                                >
+                                    {selectedRobots.has(robot.id) ? 'Selected ✓' : 'Select'}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
+            
             {selectedRobots.size > 0 && (
-                <div className="mt-4 mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm font-medium text-purple-800 mb-2">
+                <div className="mt-6 mb-8 p-5 bg-slate-800/50 border border-slate-700 rounded-2xl">
+                    <p className="text-sm font-medium text-purple-400 mb-2">
                         Robots Selected for the Portfolio: {selectedRobots.size}
                     </p>
-                    <ul className="list-disc list-inside text-xs text-purple-700 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-gray-300 space-y-1">
                         {Array.from(selectedRobots).map(robotId => {
                             const robot = availableRobots.find(r => r.id === robotId);
                             return <li key={robotId}>{robot?.nomeRobo || robotId}</li>;
@@ -466,11 +459,12 @@ function CreatePortfolioContent() {
                     </ul>
                 </div>
             )}
+
             <button
                 type="button"
                 onClick={handleSimulatePortfolio}
                 disabled={isSimulating || selectedRobots.size === 0 || !portfolioName.trim() || loadingRobots}
-                className="bg-purple-600 hover:bg-purple-900 text-white font-bold py-3 px-6 rounded-md text-base disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center w-full md:w-auto transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-400"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-full md:w-auto transition-all shadow-[0_0_10px_theme(colors.purple.500/40)] focus:outline-none focus:ring-2 focus:ring-purple-400"
             >
                 {isSimulating ? (
                     <>
@@ -493,6 +487,9 @@ function MyPortfoliosContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [portfolioToDelete, setPortfolioToDelete] = useState<Portfolio | null>(null);
+
 
     useEffect(() => {
         if (user?.uid) {
@@ -501,7 +498,7 @@ function MyPortfoliosContent() {
                 setError(null);
                 try {
                     const db = getDatabase();
-                    const portfoliosRef = dbRefFirebase(db, `portfolios/${user.uid}`);
+                    const portfoliosRef = ref(db, `portfolios/${user.uid}`);
                     const snapshot = await get(portfoliosRef);
                     if (snapshot.exists()) {
                         const portfoliosData = snapshot.val();
@@ -529,92 +526,107 @@ function MyPortfoliosContent() {
         }
     }, [user]);
 
-    const handleRemovePortfolio = async (portfolioId: string) => {
-        if (!user?.uid || !portfolioId) return;
+    const confirmRemovePortfolio = (portfolio: Portfolio) => {
+        setPortfolioToDelete(portfolio);
+        setShowDeleteModal(true);
+    };
 
-        const isConfirmed = window.confirm(
-            "Are you sure you want to remove this portfolio? This action cannot be undone."
-        );
-
-        if (!isConfirmed) {
-            return;
-        }
-
-        setDeletingId(portfolioId);
+    const handleRemovePortfolio = async () => {
+        if (!user?.uid || !portfolioToDelete) return;
+        
+        setDeletingId(portfolioToDelete.id);
         setError(null);
+        setShowDeleteModal(false);
 
         try {
             const db = getDatabase();
-            const portfolioRef = dbRefFirebase(db, `portfolios/${user.uid}/${portfolioId}`);
+            const portfolioRef = ref(db, `portfolios/${user.uid}/${portfolioToDelete.id}`);
             await remove(portfolioRef);
-
             setUserPortfolios(currentPortfolios => 
-                currentPortfolios.filter(p => p.id !== portfolioId)
+                currentPortfolios.filter(p => p.id !== portfolioToDelete.id)
             );
-
         } catch (err) {
             console.error("Error removing portfolio:", err);
             setError("Failed to remove portfolio. Please try again.");
         } finally {
             setDeletingId(null);
+            setPortfolioToDelete(null);
         }
     };
 
     if (isLoading) { 
-        return (
-            <div className="flex justify-center items-center h-32">
-                <svg className="animate-spin h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className="ml-2 text-gray-600">Loading your portfolios...</span>
-            </div>
-        );
+        return <LoadingSpinner message="Loading your portfolios..." />;
     }
-    if (error) return <p className="text-red-500 bg-red-100 p-3 rounded-md mb-4">{error}</p>;
+    if (error) return <p className="text-red-400 bg-red-900/50 border border-red-500 p-3 rounded-lg mb-4">{error}</p>;
 
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">My Saved Portfolios</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">My Saved Portfolios</h2>
             {userPortfolios.length === 0 ? (
-                <p className="text-gray-600 bg-blue-50 p-4 rounded-md">You haven't created any portfolios yet. Click the "Create New Portfolio" tab to get started.</p>
+                <div className="text-center text-gray-400 mt-10 p-10 bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg">
+                    <h2 className="text-xl font-semibold text-white mb-2">No portfolios found</h2>
+                    <p>Click the "Create New Portfolio" tab to get started.</p>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {userPortfolios.map(portfolio => (
-                        <Card key={portfolio.id} className="hover:shadow-lg transition-shadow duration-150 ease-in-out flex flex-col">
-                            <CardHeader className="pb-3 pt-4 px-4">
-                                <CardTitle className="text-lg text-purple-700">{portfolio.nomePortfolio}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0 flex-grow flex flex-col justify-between">
+                        <div key={portfolio.id} className="bg-slate-800/50 border border-slate-700 rounded-2xl shadow-lg flex flex-col transition-transform hover:scale-[1.02]">
+                            <div className="p-6 flex-grow flex flex-col justify-between">
                                 <div>
-                                    <p className="text-sm text-gray-600 mb-1">
-                                        <span className="font-medium">{portfolio.robos.length}</span> Robot(s) in the portfolio
+                                    <h3 className="text-lg font-semibold text-purple-400 mb-2 truncate">{portfolio.nomePortfolio}</h3>
+                                    <p className="text-sm text-gray-400 mb-1">
+                                        <span className="font-medium text-gray-300">{portfolio.robos.length}</span> Robot(s) in the portfolio
                                     </p>
                                     <p className="text-xs text-gray-500 mb-4">
-                                        Created in: {new Date(portfolio.dataCriacao).toLocaleDateString('pt-BR', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                        Created in: {new Date(portfolio.dataCriacao).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                                     </p>
                                 </div>
-                                <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                                <div className="mt-4 flex flex-col sm:flex-row gap-3">
                                     <button
                                         type="button"
                                         onClick={() => router.push(`/dashboardportfolio?id=${portfolio.id}&origem=portfolio`)}
                                         disabled={deletingId === portfolio.id}
-                                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-4 rounded-md transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors shadow-[0_0_10px_theme(colors.purple.500/40)] focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         See Analysis
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => handleRemovePortfolio(portfolio.id)}
+                                        onClick={() => confirmRemovePortfolio(portfolio)}
                                         disabled={deletingId === portfolio.id}
-                                        className="flex-1 bg-transparent hover:bg-red-100 text-red-600 font-semibold border border-red-500 text-sm py-2 px-4 rounded-md transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 bg-transparent hover:bg-red-900/40 text-red-500 font-semibold border border-red-500 text-sm py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {deletingId === portfolio.id ? 'Removing...' : 'Delete'}
                                     </button>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     ))}
+                </div>
+            )}
+             {showDeleteModal && portfolioToDelete && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl max-w-sm w-11/12">
+                        <h3 className="text-lg font-semibold text-white mb-4">
+                            Are you sure you want to delete
+                            <span className="text-purple-400"> "{portfolioToDelete.nomePortfolio}"</span>?
+                        </h3>
+                        <p className="text-sm text-gray-400 mb-6">This action cannot be undone.</p>
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="px-4 py-2 bg-slate-700 text-gray-300 rounded-lg hover:bg-slate-600 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleRemovePortfolio}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
@@ -626,36 +638,36 @@ export default function PortfolioPageContainer() {
     const [sidebarAberta, setSidebarAberta] = useState(false);
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-slate-900 text-gray-200">
             <Topbar />
-            <div className="md:hidden p-2 bg-white shadow z-40">
+            <div className="md:hidden p-2 bg-slate-800/50 border-b border-slate-700 shadow z-40">
                 <button
                     onClick={() => setSidebarAberta(!sidebarAberta)}
-                    className="text-purple-700 font-bold text-xl"
+                    className="text-purple-400 font-bold text-xl p-2"
                 >
                     ☰
                 </button>
             </div>
-            <div className="flex flex-1">
-                <div className={`absolute md:static z-50 transition-transform duration-300 transform bg-white shadow-md md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+            <div className="flex flex-1 overflow-hidden">
+                 <div className={`absolute md:static z-50 transition-transform duration-300 transform bg-slate-900 border-r border-slate-800 shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
                     <Sidebar />
                 </div>
-                <main className="flex-1 bg-gray-50 p-4 md:p-6 overflow-y-auto" onClick={() => sidebarAberta && setSidebarAberta(false)}>
-                <div className="max-w-6xl mx-auto">
-                    <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gray-800">Portfolio Manager</h1>
-                    <div className="mb-6 border-b border-gray-200">
-                        <nav className="-mb-px flex space-x-6 md:space-x-8" aria-label="Tabs">
-                            <button onClick={() => setActiveTab('meus')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none ${activeTab === 'meus' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}> My Portfolios </button>
-                            <button onClick={() => setActiveTab('novo')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none ${activeTab === 'novo' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}> Create New Portfolio </button>
-                        </nav>
+                <main className="flex-1 p-6 lg:p-8 overflow-y-auto" onClick={() => sidebarAberta && setSidebarAberta(false)}>
+                    <div className="max-w-7xl mx-auto">
+                        <h1 className="text-2xl md:text-3xl font-bold mb-6 text-white">Portfolio Manager</h1>
+                        <div className="mb-8 border-b border-slate-700">
+                            <nav className="-mb-px flex space-x-6 md:space-x-8" aria-label="Tabs">
+                                <button onClick={() => setActiveTab('meus')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none transition-colors ${activeTab === 'meus' ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-slate-600'}`}> My Portfolios </button>
+                                <button onClick={() => setActiveTab('novo')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none transition-colors ${activeTab === 'novo' ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-500 hover:text-gray-300 hover:border-slate-600'}`}> Create New Portfolio </button>
+                            </nav>
+                        </div>
+                        <Suspense fallback={<LoadingSpinner />}>
+                            {activeTab === 'meus' && <MyPortfoliosContent />}
+                            {activeTab === 'novo' && <CreatePortfolioContent />}
+                        </Suspense>
                     </div>
-                    <Suspense fallback={ <div className="flex justify-center items-center h-40"> <svg className="animate-spin h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"> <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle> <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path> </svg> <span className="ml-2 text-gray-600">Loading...</span> </div> }>
-                        {activeTab === 'meus' && <MyPortfoliosContent />}
-                        {activeTab === 'novo' && <CreatePortfolioContent />}
-                    </Suspense>
-                </div>
                 </main>
-                </div>
+            </div>
         </div>
     );
 }

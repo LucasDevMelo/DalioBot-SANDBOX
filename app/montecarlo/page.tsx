@@ -7,8 +7,9 @@ import { getDatabase, ref, get } from 'firebase/database';
 import { useAuth } from '@/src/context/authcontext';
 import { useRouter } from 'next/navigation';
 import { LineChart, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-// --- INTERFACES AND TYPES ---
+// --- INTERFACES ---
 type Robo = {
   nome: string;
   mercado: string;
@@ -20,11 +21,11 @@ type Robo = {
   drawdown?: number;
 };
 
-// --- COMPONENTS ---
+// --- COMPONENTES AUXILIARES ---
 function LoadingSpinner() {
   return (
     <div className="flex flex-1 justify-center items-center h-full p-8">
-      <svg className="animate-spin h-10 w-10 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <svg className="animate-spin h-10 w-10 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
@@ -32,18 +33,17 @@ function LoadingSpinner() {
   );
 }
 
-// The access denied component was simplified for the beta version
 function AccessDeniedGate({ message }: { message: string }) {
   const router = useRouter();
   return (
     <main className="flex-1 w-full p-4 sm:p-6 flex flex-col justify-center items-center">
-      <div className="bg-white p-8 rounded-2xl shadow-md border max-w-md w-full text-center">
+      <div className="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-lg text-center text-white max-w-md">
         <Lock className="mx-auto h-12 w-12 text-yellow-500" />
-        <h2 className="mt-4 text-xl font-bold text-gray-800">Restricted Access</h2>
-        <p className="mt-2 text-gray-600">{message}</p>
+        <h2 className="mt-4 text-xl font-bold">Restricted Access</h2>
+        <p className="mt-2 text-gray-400">{message}</p>
         <button
           onClick={() => router.push('/login')}
-          className="mt-6 inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+          className="mt-6 inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow-[0_0_15px_theme(colors.purple.500/40)]"
         >
           Login
         </button>
@@ -52,73 +52,41 @@ function AccessDeniedGate({ message }: { message: string }) {
   );
 }
 
-const StatItem = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="flex justify-between items-center text-sm py-1.5 border-b border-gray-100 last:border-b-0">
-    <span className="text-gray-500">{label}</span>
-    <span className="font-semibold text-gray-800 text-right">{value}</span>
-  </div>
-);
-
-const RoboCardMobile = ({ robo, onSimulate }: { robo: Robo; onSimulate: (robo: Robo) => void }) => (
-  <div className="bg-white border rounded-xl p-4 shadow-sm text-black flex flex-col gap-3">
-    <h3 className="font-bold text-lg text-purple-700 truncate">{robo.nome}</h3>
-    <div className="space-y-1">
-      <StatItem label="Market" value={robo.mercado} />
-      <StatItem label="Asset" value={robo.ativo} />
-      <StatItem label="Total Balance" value={`$ ${robo.saldoTotal.toFixed(2)}`} />
-      <StatItem label="Profit Factor" value={robo.fatorLucro.toFixed(2)} />
-      <StatItem label="Drawdown" value={`$ ${robo.drawdown?.toFixed(2) ?? '0.00'}`} />
-    </div>
-    <div className="text-center text-xs text-gray-400 mt-2">
-      <p>Period: {robo.historicoInicio} to {robo.historicoFim}</p>
-    </div>
-    <button
-      onClick={() => onSimulate(robo)}
-      className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 transition-colors"
-    >
-      <LineChart size={18} />
-      View Simulation
-    </button>
-  </div>
-);
-
+// --- COMPONENTES DE EXIBIÇÃO ---
 const RoboTableDesktop = ({ robos, onSimulate }: { robos: Robo[]; onSimulate: (robo: Robo) => void }) => (
   <div className="hidden md:block w-full">
-    <div className="overflow-x-auto rounded-lg border">
-      <table className="min-w-full bg-white text-black">
-        <thead className="bg-gray-50 text-gray-600 text-sm font-medium">
+    <div className="overflow-x-auto rounded-xl border border-slate-700 bg-slate-800/50">
+      <table className="min-w-full text-gray-300 text-sm">
+        <thead className="bg-slate-800/70 text-gray-400 text-xs uppercase">
           <tr>
             <th className="py-3 px-4 text-left">Robot</th>
             <th className="py-3 px-4 text-left hidden lg:table-cell">Market</th>
             <th className="py-3 px-4 text-left hidden lg:table-cell">Asset</th>
             <th className="py-3 px-4 text-left hidden xl:table-cell">Period</th>
-            <th className="py-3 px-4 text-right">Total Balance</th>
+            <th className="py-3 px-4 text-right">Balance</th>
             <th className="py-3 px-4 text-right">Profit Factor</th>
             <th className="py-3 px-4 text-right">Drawdown</th>
-            <th className="py-3 px-4 text-center">Actions</th>
+            <th className="py-3 px-4 text-center">Action</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 text-sm">
+        <tbody className="divide-y divide-slate-700">
           {robos.map((robo) => (
-            <tr key={robo.nome} className="hover:bg-gray-50/70 transition-colors">
-              <td className="py-3 px-4 font-semibold text-purple-800">{robo.nome}</td>
+            <tr key={robo.nome} className="hover:bg-slate-700/40 transition-colors">
+              <td className="py-3 px-4 font-semibold text-purple-400">{robo.nome}</td>
               <td className="py-3 px-4 hidden lg:table-cell">{robo.mercado}</td>
               <td className="py-3 px-4 hidden lg:table-cell">{robo.ativo}</td>
-              <td className="py-3 px-4 hidden xl:table-cell">{robo.historicoInicio} - {robo.historicoFim}</td>
-              <td className="py-3 px-4 text-right">$ {robo.saldoTotal.toFixed(2)}</td>
-              <td className="py-3 px-4 text-right">{robo.fatorLucro.toFixed(2)}</td>
-              <td className="py-3 px-4 text-right text-red-600">$ {robo.drawdown?.toFixed(2) ?? '0.00'}</td>
-              <td className="py-3 px-4">
-                <div className="flex justify-center">
-                  <button
-                    onClick={() => onSimulate(robo)}
-                    title={`Simulate ${robo.nome}`}
-                    className="bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1.5 rounded-md text-sm font-semibold flex items-center gap-1.5 transition-colors"
-                  >
-                    <LineChart size={16} />
-                    Simulate
-                  </button>
-                </div>
+              <td className="py-3 px-4 hidden xl:table-cell text-gray-400">{robo.historicoInicio} - {robo.historicoFim}</td>
+              <td className="py-3 px-4 text-right">${robo.saldoTotal.toFixed(2)}</td>
+              <td className="py-3 px-4 text-right text-purple-300">{robo.fatorLucro.toFixed(2)}</td>
+              <td className="py-3 px-4 text-right text-red-400">${robo.drawdown?.toFixed(2) ?? '0.00'}</td>
+              <td className="py-3 px-4 text-center">
+                <button
+                  onClick={() => onSimulate(robo)}
+                  className="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 px-3 py-1.5 rounded-md text-sm font-semibold flex items-center gap-2 justify-center transition-colors"
+                >
+                  <LineChart size={16} />
+                  Simulate
+                </button>
               </td>
             </tr>
           ))}
@@ -128,7 +96,31 @@ const RoboTableDesktop = ({ robos, onSimulate }: { robos: Robo[]; onSimulate: (r
   </div>
 );
 
-// --- MAIN PAGE ---
+const RoboCardMobile = ({ robo, onSimulate }: { robo: Robo; onSimulate: (robo: Robo) => void }) => (
+  <motion.div 
+    className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 shadow-sm text-gray-200 flex flex-col gap-3"
+    whileHover={{ scale: 1.02 }}
+  >
+    <h3 className="font-bold text-lg text-purple-400 truncate">{robo.nome}</h3>
+    <div className="text-sm space-y-1">
+      <p><span className="text-gray-400">Market:</span> {robo.mercado}</p>
+      <p><span className="text-gray-400">Asset:</span> {robo.ativo}</p>
+      <p><span className="text-gray-400">Balance:</span> ${robo.saldoTotal.toFixed(2)}</p>
+      <p><span className="text-gray-400">Profit Factor:</span> {robo.fatorLucro.toFixed(2)}</p>
+      <p><span className="text-gray-400">Drawdown:</span> ${robo.drawdown?.toFixed(2) ?? '0.00'}</p>
+      <p className="text-xs text-gray-500 mt-1">Period: {robo.historicoInicio} → {robo.historicoFim}</p>
+    </div>
+    <button
+      onClick={() => onSimulate(robo)}
+      className="w-full mt-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_theme(colors.purple.500/30)]"
+    >
+      <LineChart size={18} />
+      View Simulation
+    </button>
+  </motion.div>
+);
+
+// --- PÁGINA PRINCIPAL ---
 export default function MontecarloPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -136,8 +128,6 @@ export default function MontecarloPage() {
   const [robos, setRobos] = useState<Robo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [quantidadeSimulacoes, setQuantidadeSimulacoes] = useState(100);
-
-  // Remove plan and limit logic, now it's all for the BETA
   const MAX_SIMULATIONS_BETA = 1500;
 
   useEffect(() => {
@@ -170,7 +160,7 @@ export default function MontecarloPage() {
           setRobos([]);
         }
       } catch (error) {
-        console.error('Error searching for robots:', error);
+        console.error('Error fetching robots:', error);
         setRobos([]);
       } finally {
         setCarregando(false);
@@ -181,11 +171,6 @@ export default function MontecarloPage() {
   }, [user, authLoading]);
 
   const handleVerSimulacao = (robo: Robo) => {
-    if (quantidadeSimulacoes <= 0) {
-      alert('Please enter a valid number of simulations (greater than 0).');
-      return;
-    }
-    // We removed the plan check and are now using the beta version limit
     if (quantidadeSimulacoes > MAX_SIMULATIONS_BETA) {
       alert(`In the beta version, you can simulate a maximum of ${MAX_SIMULATIONS_BETA} simulations.`);
       setQuantidadeSimulacoes(MAX_SIMULATIONS_BETA);
@@ -195,42 +180,52 @@ export default function MontecarloPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-slate-900 text-gray-200">
       <Topbar />
-      <div className="md:hidden p-2 bg-white shadow-md z-40 sticky top-0">
-        <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-700 font-bold text-xl">
+
+      {/* Sidebar mobile */}
+      <div className="md:hidden p-2 bg-slate-800/50 border-b border-slate-700 shadow z-40">
+        <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-400 font-bold text-xl p-2">
           ☰
         </button>
       </div>
-      <div className="flex flex-1">
-        <div className={`fixed md:static z-30 transition-transform duration-300 transform bg-white shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+
+      <div className="flex flex-1 overflow-hidden">
+        <div className={`absolute md:static z-50 transition-transform duration-300 transform bg-slate-900 border-r border-slate-800 shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
           <Sidebar />
         </div>
 
-        {/* --- CORRECTED RENDERING LOGIC --- */}
-
+        {/* Conteúdo principal */}
         {authLoading ? (
-          <main className="flex-1 w-full p-4 sm:p-6 flex flex-col">
+          <main className="flex-1 w-full p-6 flex flex-col">
             <LoadingSpinner />
           </main>
         ) : !user ? (
-          <AccessDeniedGate
-            message="You must be logged in to access the Monte Carlo Simulation."
-          />
+          <AccessDeniedGate message="You must be logged in to access the Monte Carlo Simulation." />
         ) : (
-          <main className="flex-1 w-full p-4 sm:p-6 flex flex-col">
-            <header className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900">Monte Carlo Simulation</h1>
-              <p className="text-gray-500 mt-1">Stress test your strategies to check their robustness.</p>
-              <div className="mt-2 text-sm text-purple-800 bg-purple-50 border border-purple-200 rounded-md p-2">
-                You are on the BETA version. The simulation is **fully unlocked** for your robot!
+          <main className="flex-1 w-full p-6 lg:p-8 flex flex-col">
+            <motion.header 
+              className="mb-8"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h1 className="text-3xl font-bold text-white mb-1">Monte Carlo Simulation</h1>
+              <p className="text-gray-400">Stress test your strategies to check their robustness.</p>
+              <div className="mt-3 text-sm text-purple-300 bg-purple-500/10 border border-purple-500/30 rounded-md p-3">
+                You are using the <b>BETA version</b>. All simulations are <span className="font-semibold text-purple-400">fully unlocked</span>.
               </div>
-            </header>
+            </motion.header>
 
-            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm flex-1 flex flex-col">
+            <motion.section
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 shadow-sm flex-1 flex flex-col"
+            >
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6">
                 <div>
-                  <label htmlFor="simulations" className="font-medium text-gray-700 flex items-center gap-2">
+                  <label htmlFor="simulations" className="font-medium text-gray-300 flex items-center gap-2">
                     Number of Simulations:
                   </label>
                   <input
@@ -240,7 +235,7 @@ export default function MontecarloPage() {
                     max={MAX_SIMULATIONS_BETA}
                     value={quantidadeSimulacoes}
                     onChange={(e) => setQuantidadeSimulacoes(Number(e.target.value))}
-                    className="border border-gray-300 rounded-md p-2 w-32 text-black focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition mt-1"
+                    className="border border-slate-600 bg-slate-900 rounded-md p-2 w-32 text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">Max: {MAX_SIMULATIONS_BETA}</p>
                 </div>
@@ -249,23 +244,23 @@ export default function MontecarloPage() {
               {carregando ? (
                 <LoadingSpinner />
               ) : robos.length === 0 ? (
-                <div className="text-center text-gray-500 my-10 p-6 border-2 border-dashed rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-800">No robots found.</h3>
+                <div className="text-center text-gray-400 my-10 p-8 border-2 border-dashed border-slate-700 rounded-xl">
+                  <h3 className="text-lg font-semibold text-white">No robots found.</h3>
                   <p className="text-sm mt-2">
-                    Go to page <a href="/robots" className="text-purple-600 hover:underline font-medium">My robots</a> to add a strategy.
+                    Go to <a href="/robots" className="text-purple-400 hover:underline">My Robots</a> to add one.
                   </p>
                 </div>
               ) : (
                 <div className="flex-1">
                   <RoboTableDesktop robos={robos} onSimulate={handleVerSimulacao} />
-                  <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                     {robos.map((robo) => (
                       <RoboCardMobile key={robo.nome} robo={robo} onSimulate={handleVerSimulacao} />
                     ))}
                   </div>
                 </div>
               )}
-            </div>
+            </motion.section>
           </main>
         )}
       </div>

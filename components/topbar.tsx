@@ -1,22 +1,31 @@
 'use client';
-import Image from 'next/image';
+
+// O import do 'next/image' foi removido pois o componente usa a tag <img> padrão.
+// import Image from 'next/image';
 
 export default function Topbar() {
   return (
-    <header className="w-full bg-purple-600 text-white px-6 py-3 shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between items-center justify-center">
-      {/* Logo + Título centralizado no mobile, alinhado à esquerda no desktop */}
-      <div className="flex items-center gap-2">
-        <img src="/logo.png" alt="Estagnação" className="w-9 h-9" />
-        <h1 className="text-2xl font-bold text-center sm:text-left">
-          Dalio<span className="text-black bg-white px-1 rounded">Bot</span>
+    <header className="w-full bg-slate-900/70 text-white px-6 py-3 border-b border-slate-800 backdrop-blur-lg sticky top-0 z-50 flex items-center justify-between">
+      
+      {/* Logo + Título */}
+      <div className="flex items-center gap-3">
+        <img src="/logo.png" alt="DalioBot Logo" className="w-8 h-8" />
+        <h1 className="text-2xl font-extrabold">
+          <span className="text-white">Dalio</span>
+          <span className="text-purple-400">Bot</span>
         </h1>
-        {/* Adicionado o badge "Beta Edition" */}
-        <span className="ml-2 px-2 py-0.5 text-xs font-semibold text-white bg-purple-500 rounded-full">
+        
+        {/* Selo "Beta Version" com novo estilo */}
+        <span className="ml-2 px-2.5 py-0.5 text-xs font-semibold text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-full">
           Beta Version
         </span>
       </div>
 
-      {/* Espaço para ícones ou botões no futuro */}
+      {/* Espaço reservado para futuros botões ou ícones de perfil */}
+      <div>
+        {/* Exemplo: <button className="p-2 rounded-full hover:bg-slate-800">...</button> */}
+      </div>
+      
     </header>
   );
 }
