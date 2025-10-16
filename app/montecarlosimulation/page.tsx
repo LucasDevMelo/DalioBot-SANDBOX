@@ -13,7 +13,7 @@ import React from 'react';
 
 // --- Reusable Components ---
 
-// Componente para criar um Tooltip customizado que resume os dados
+// Component to create a custom Tooltip that summarizes the data
 const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
     if (active && payload && payload.length) {
         const values = payload.map((p: any) => p.value).sort((a: number, b: number) => a - b);
@@ -35,7 +35,7 @@ const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
     return null;
 };
 
-// Spinner de carregamento com barra de progresso
+// Loading spinner with progress bar
 function ProgressLoadingSpinner({ progress }: { progress: number; }) {
     return (
         <div className="flex flex-1 flex-col justify-center items-center h-full p-8 text-center min-h-[400px]">
@@ -46,8 +46,8 @@ function ProgressLoadingSpinner({ progress }: { progress: number; }) {
             <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2.5 mb-2 shadow-inner">
                 <div className="bg-violet-500 h-2.5 rounded-full transition-all duration-150" style={{ width: `${progress}%` }}></div>
             </div>
-            <p className="text-gray-300 font-semibold">Gerando Simulações... {progress}%</p>
-            <p className="text-xs text-gray-500 mt-1">Isso pode levar alguns instantes.</p>
+            <p className="text-gray-300 font-semibold">Generating Simulations... {progress}%</p>
+            <p className="text-xs text-gray-500 mt-1">This might take a few moments.</p>
         </div>
     );
 }
@@ -79,7 +79,7 @@ interface OcorrenciaDrawdown {
 function SimulacaoMonteCarloContent() {
     const [sidebarAberta, setSidebarAberta] = useState(false);
     const searchParams = useSearchParams();
-    const nomeRobo = searchParams.get('robo') || "Robô Desconhecido";
+    const nomeRobo = searchParams.get('robo') || "Unknown Bot";
     const [carregando, setCarregando] = useState(true);
     const [progresso, setProgresso] = useState(0);
 
@@ -205,7 +205,7 @@ function SimulacaoMonteCarloContent() {
                 };
             });
             return {
-                label: `Pior que (DD Médio - ${multiplicador} DP)`,
+                label: `Worse than (Avg DD - ${multiplicador} SD)`,
                 limite, vezes,
                 porcentagem: todosOsDrawdowns.length > 0 ? (vezes / todosOsDrawdowns.length) * 100 : 0,
                 histograma: histArray,
@@ -266,7 +266,7 @@ function SimulacaoMonteCarloContent() {
     };
     const formatDays = (value: number) => {
         if (value === Infinity || value === -Infinity || isNaN(value)) return "N/A";
-        return `${Math.round(value)} dias`;
+        return `${Math.round(value)} days`;
     };
 
     // Chart Tooltip Style for Recharts
@@ -294,8 +294,8 @@ function SimulacaoMonteCarloContent() {
                 </div>
                 <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                     <header className="mb-8">
-                        <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Simulação de Monte Carlo</h1>
-                        <p className="text-slate-400 mt-1">{nomeRobo} - {quantidadeSimulacoes.toLocaleString('pt-BR')} Cenários</p>
+                        <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Monte Carlo Simulation</h1>
+                        <p className="text-slate-400 mt-1">{nomeRobo} - {quantidadeSimulacoes.toLocaleString('pt-BR')} Scenarios</p>
                     </header>
 
                     <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl shadow-slate-950/50 mb-8 flex items-center justify-center">
@@ -354,38 +354,38 @@ function SimulacaoMonteCarloContent() {
                                 </LineChart>
 
                             </ResponsiveContainer>
-                        ) : (<p className="text-slate-400">Nenhuma simulação para exibir.</p>)}
+                        ) : (<p className="text-slate-400">No simulations to display.</p>)}
                     </section>
 
                     {!carregando && monteCarloData.length > 0 && (
                         <div className="space-y-8">
-                            {/* Card de Análise de Drawdown */}
+                            {/* Drawdown Analysis Card */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Análise de Drawdown</h3>
+                                <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Drawdown Analysis</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-                                    <StatCard label="Máximo Drawdown" value={formatCurrency(estatisticas.maiorDrawdown)} color="text-red-400" />
-                                    <StatCard label="Drawdown Médio" value={formatCurrency(estatisticas.drawdownMedio)} color="text-amber-400" />
-                                    <StatCard label="Mínimo Drawdown" value={formatCurrency(estatisticas.menorDrawdown)} color="text-sky-400" />
-                                    <StatCard label="Desvio Padrão (DDs)" value={formatCurrency(estatisticas.desvioPadraoDrawdowns)} color="text-violet-400" />
+                                    <StatCard label="Maximum Drawdown" value={formatCurrency(estatisticas.maiorDrawdown)} color="text-red-400" />
+                                    <StatCard label="Average Drawdown" value={formatCurrency(estatisticas.drawdownMedio)} color="text-amber-400" />
+                                    <StatCard label="Minimum Drawdown" value={formatCurrency(estatisticas.menorDrawdown)} color="text-sky-400" />
+                                    <StatCard label="Standard Deviation (DDs)" value={formatCurrency(estatisticas.desvioPadraoDrawdowns)} color="text-violet-400" />
                                 </div>
                             </section>
 
-                            {/* Card de Ocorrências de Drawdown */}
+                            {/* Drawdown Occurrences Card */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-lg text-center font-semibold text-violet-400 mb-5 border-b border-slate-700 pb-3">Ocorrências de Drawdown</h3>
+                                <h3 className="text-lg text-center font-semibold text-violet-400 mb-5 border-b border-slate-700 pb-3">Drawdown Occurrences</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {estatisticas.ocorrenciasDrawdown.map((item, index) => (
                                         <div key={index} className="bg-slate-800 rounded-xl p-4 shadow-inner flex flex-col items-center text-center">
                                             <h4 className="text-sm font-semibold text-gray-300 mb-2"> {item.label} </h4>
                                             <p className="text-xl font-bold text-violet-400 mb-1">{formatCurrency(item.limite)}</p>
-                                            <p className="text-xs text-gray-500"> {item.vezes.toLocaleString('pt-BR')} vezes ({formatPercentage(item.porcentagem, 1)}) </p>
+                                            <p className="text-xs text-gray-500"> {item.vezes.toLocaleString('pt-BR')} times ({formatPercentage(item.porcentagem, 1)}) </p>
                                             {item.histograma?.length > 0 && (
                                                 <div className="mt-4 w-full h-28">
                                                     <ResponsiveContainer width="100%" height="100%">
                                                         <BarChart data={item.histograma} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                                                             <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#9ca3af' }} interval="preserveStartEnd" />
                                                             <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} allowDecimals={false} />
-                                                            <RechartsTooltip {...tooltipStyle} formatter={(value: number) => [value, "Ocorrências"]} />
+                                                            <RechartsTooltip {...tooltipStyle} formatter={(value: number) => [value, "Occurrences"]} />
                                                             <Bar dataKey="ocorrencias" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                                                         </BarChart>
                                                     </ResponsiveContainer>
@@ -396,31 +396,31 @@ function SimulacaoMonteCarloContent() {
                                 </div>
                             </section>
 
-                            {/* Cards de Estagnação e Resultados Mensais */}
+                            {/* Stagnation and Monthly Results Cards */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                    <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Período de Estagnação</h3>
+                                    <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Stagnation Period</h3>
                                     <div className="grid grid-cols-3 gap-4 text-center">
-                                        <StatCard label="Mais Curto" value={formatDays(estatisticas.melhorEstagnacao)} color="text-emerald-400" />
-                                        <StatCard label="Médio" value={formatDays(estatisticas.mediaEstagnacao)} color="text-sky-400" />
-                                        <StatCard label="Mais Longo" value={formatDays(estatisticas.piorEstagnacao)} color="text-red-400" />
+                                        <StatCard label="Shortest" value={formatDays(estatisticas.melhorEstagnacao)} color="text-emerald-400" />
+                                        <StatCard label="Average" value={formatDays(estatisticas.mediaEstagnacao)} color="text-sky-400" />
+                                        <StatCard label="Longest" value={formatDays(estatisticas.piorEstagnacao)} color="text-red-400" />
                                     </div>
                                 </section>
                                 <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                    <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Resultados Mensais</h3>
+                                    <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Monthly Results</h3>
                                     <div className="grid grid-cols-3 gap-4 text-center">
-                                        <StatCard label="Melhor Mês" value={formatCurrency(estatisticas.melhorMes)} color="text-emerald-400" />
-                                        <StatCard label="Média Mensal" value={formatCurrency(estatisticas.mediaMes)} color="text-sky-400" />
-                                        <StatCard label="Pior Mês" value={formatCurrency(estatisticas.piorMes)} color="text-red-400" />
+                                        <StatCard label="Best Month" value={formatCurrency(estatisticas.melhorMes)} color="text-emerald-400" />
+                                        <StatCard label="Monthly Average" value={formatCurrency(estatisticas.mediaMes)} color="text-sky-400" />
+                                        <StatCard label="Worst Month" value={formatCurrency(estatisticas.piorMes)} color="text-red-400" />
                                     </div>
                                 </section>
                             </div>
 
-                            {/* Cards de Distribuição e Frequência */}
+                            {/* Distribution and Frequency Cards */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {estatisticas.histMensal.length > 0 && (
                                     <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                        <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Distribuição dos Resultados Mensais</h3>
+                                        <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Monthly Results Distribution</h3>
                                         <ResponsiveContainer width="100%" height={200}>
                                             <AreaChart data={estatisticas.histMensal.map((valor, i) => ({ x: i + 1, y: valor }))} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                                                 <defs>
@@ -431,50 +431,50 @@ function SimulacaoMonteCarloContent() {
                                                 </defs>
                                                 <XAxis dataKey="x" tick={{ fontSize: 10 }} hide />
                                                 <YAxis tickFormatter={(value) => formatCurrency(value)} tick={{ fontSize: 10, fill: '#9ca3af' }} width={90} />
-                                                <RechartsTooltip {...tooltipStyle} formatter={(value: number) => [formatCurrency(value), "Resultado Mensal"]} />
+                                                <RechartsTooltip {...tooltipStyle} formatter={(value: number) => [formatCurrency(value), "Monthly Result"]} />
                                                 <Area type="monotone" dataKey="y" stroke="#a78bfa" fillOpacity={1} fill="url(#colorMonthly)" strokeWidth={2.5} />
                                             </AreaChart>
                                         </ResponsiveContainer>
                                     </section>
                                 )}
                                 <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                    <h3 className="text-lg font-semibold text-violet-400 mb-4 text-center border-b border-slate-700 pb-3">Frequência de Períodos Negativos</h3>
+                                    <h3 className="text-lg font-semibold text-violet-400 mb-4 text-center border-b border-slate-700 pb-3">Frequency of Negative Periods</h3>
                                     <div className="grid grid-cols-2 gap-4 text-center">
-                                        <StatCard label="Meses" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.meses)} color="text-violet-300" />
-                                        <StatCard label="Trimestres" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.trimestres)} color="text-violet-300" />
-                                        <StatCard label="Semestres" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.semestres)} color="text-violet-300" />
-                                        <StatCard label="Anos" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.anos)} color="text-violet-300" />
+                                        <StatCard label="Months" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.meses)} color="text-violet-300" />
+                                        <StatCard label="Quarters" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.trimestres)} color="text-violet-300" />
+                                        <StatCard label="Semesters" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.semestres)} color="text-violet-300" />
+                                        <StatCard label="Years" value={formatPercentage(estatisticas.frequenciaPeriodosNegativos.anos)} color="text-violet-300" />
                                     </div>
                                 </section>
                             </div>
 
-                            {/* Card de Gestão de Risco */}
+                            {/* Risk Management Card */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-lg font-semibold text-violet-400 mb-5 text-center border-b border-slate-700 pb-3">Gerenciamento de Risco Sugerido</h3>
+                                <h3 className="text-lg font-semibold text-violet-400 mb-5 text-center border-b border-slate-700 pb-3">Suggested Risk Management</h3>
                                 <div className="mb-6">
                                     <label htmlFor="riscoRange" className="block text-sm font-medium text-gray-300 mb-2">
-                                        Seu Nível de Risco Aceito: <span className="font-bold text-violet-300">{formatPercentage(riscoAceito * 100, 0)}</span>
+                                        Your Accepted Risk Level: <span className="font-bold text-violet-300">{formatPercentage(riscoAceito * 100, 0)}</span>
                                     </label>
                                     <input id="riscoRange" type="range" min={0.05} max={1} step={0.01} value={riscoAceito} onChange={(e) => setRiscoAceito(Number(e.target.value))}
                                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500" />
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
                                     <div className="bg-violet-900/50 border border-violet-700/80 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-400 mb-1">Capital Recomendado</p>
+                                        <p className="text-sm font-medium text-gray-400 mb-1">Recommended Capital</p>
                                         <p className="text-2xl font-bold text-violet-300">{formatCurrency(resultadoRisco.capitalRecomendado)}</p>
                                     </div>
                                     <div className="bg-emerald-900/50 border border-emerald-700/80 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-400 mb-1">Retorno Mensal Estimado</p>
+                                        <p className="text-sm font-medium text-gray-400 mb-1">Estimated Monthly Return</p>
                                         <p className="text-2xl font-bold text-emerald-400">{formatPercentage(resultadoRisco.retornoMensalEstimado)}</p>
                                     </div>
                                     <div className="bg-red-900/50 border border-red-700/80 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-400 mb-1">Risco de Ruína Estimado</p>
+                                        <p className="text-sm font-medium text-gray-400 mb-1">Estimated Risk of Ruin</p>
                                         <p className="text-2xl font-bold text-red-400">{formatPercentage(resultadoRisco.riscoRuinaEstimado)}</p>
-                                        <p className="text-xs text-gray-500">({resultadoRisco.ocorrenciasRuina} de {quantidadeSimulacoes} sims)</p>
+                                        <p className="text-xs text-gray-500">({resultadoRisco.ocorrenciasRuina} of {quantidadeSimulacoes} sims)</p>
                                     </div>
                                 </div>
                                 <p className="text-xs text-slate-500 mt-6 text-center">
-                                    *Estimativas baseadas em simulações e no nível de risco selecionado. Não é uma garantia de resultados futuros.
+                                    *Estimates based on simulations and the selected risk level. This is not a guarantee of future results.
                                 </p>
                             </section>
                         </div>
@@ -485,7 +485,7 @@ function SimulacaoMonteCarloContent() {
     );
 }
 
-// Componente auxiliar para cards de estatísticas
+// Helper component for stat cards
 const StatCard = ({ label, value, color }: { label: string; value: string; color: string; }) => (
     <div>
         <p className={`text-2xl font-bold ${color}`}>{value}</p>
@@ -505,8 +505,8 @@ export default function SimulacaoMonteCarloPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <p className="text-lg font-semibold text-gray-300">Carregando Simulação...</p>
-                    <p className="text-sm text-gray-500">Buscando parâmetros e preparando o ambiente.</p>
+                    <p className="text-lg font-semibold text-gray-300">Loading Simulation...</p>
+                    <p className="text-sm text-gray-500">Fetching parameters and preparing the environment.</p>
                 </div>
             </div>
         }>
