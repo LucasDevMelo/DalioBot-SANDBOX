@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -164,7 +165,8 @@ export default function HomePage() {
                   alt="Daliobot Performance Dashboard"
                   width={600}
                   height={450}
-                  className="rounded-lg"
+                  // CORREÇÃO: Adicionado w-full e h-auto para manter a proporção da imagem
+                  className="rounded-lg w-full h-auto"
                   priority
                 />
               </div>
@@ -182,7 +184,8 @@ export default function HomePage() {
                 <Link href="/login" className="mt-6 inline-block text-purple-400 font-semibold hover:text-purple-300 transition-colors">I want to master my projections &rarr;</Link>
               </div>
               <div className="p-1 bg-gradient-to-br from-purple-500/50 to-fuchsia-500/50 rounded-xl shadow-lg">
-                <Image src="/grafico de rentabilidade2.png" alt="Profitability Chart" width={500} height={350} className="rounded-lg" />
+                {/* CORREÇÃO: Adicionado w-full e h-auto para manter a proporção da imagem */}
+                <Image src="/grafico de rentabilidade2.png" alt="Profitability Chart" width={500} height={350} className="rounded-lg w-full h-auto" />
               </div>
             </div>
           </AnimatedSection>
@@ -199,7 +202,8 @@ export default function HomePage() {
                 <Link href="/login" className="mt-6 inline-block text-purple-400 font-semibold hover:text-purple-300 transition-colors">I want to prepare for any scenario &rarr;</Link>
               </div>
               <div className="md:order-1 p-1 bg-gradient-to-bl from-purple-500/50 to-fuchsia-500/50 rounded-xl shadow-lg">
-                <Image src="/montecarlo.png" alt="Monte Carlo Simulation" width={500} height={350} className="rounded-lg" />
+                {/* CORREÇÃO: Adicionado w-full e h-auto para manter a proporção da imagem */}
+                <Image src="/montecarlo.png" alt="Monte Carlo Simulation" width={500} height={350} className="rounded-lg w-full h-auto" />
               </div>
             </div>
           </AnimatedSection>
@@ -260,7 +264,8 @@ export default function HomePage() {
                   </div>
                   <p className="italic text-gray-300 flex-grow">"{testimonial.text}"</p>
                   <div className="flex items-center mt-6 pt-4 border-t border-slate-700">
-                    <Image src={testimonial.img} width={40} height={40} alt={testimonial.name} className="rounded-full" />
+                    {/* CORREÇÃO: Adicionado object-cover para evitar distorção em imagens não-quadradas */}
+                    <Image src={testimonial.img} width={40} height={40} alt={testimonial.name} className="rounded-full object-cover" />
                     <div className="ml-4">
                       <p className="font-bold text-white">{testimonial.name}</p>
                       <p className="text-sm text-gray-400">{testimonial.role}</p>
@@ -366,7 +371,7 @@ export default function HomePage() {
                 <h3 className="text-md font-semibold text-white pt-2">1. Data We Collect</h3>
                 <ul className="list-disc list-inside space-y-2 text-gray-400">
                   <li><strong>Account Information:</strong> When you register, we collect your name, email address, and a hashed password.</li>
-                  <li><strong>Backtest and Portfolio Data:</strong> We store all data from your uploaded `.csv` files and the portfolios you create. This sensitive data is used solely to provide you with analysis within your account and is never shared.</li>
+                  <li><strong>Backtest and Portfolio Data:</strong> We store all data from your uploaded .csv files and the portfolios you create. This sensitive data is used solely to provide you with analysis within your account and is never shared.</li>
                   <li><strong>Usage Data:</strong> We automatically collect technical and usage data to improve our service.</li>
                 </ul>
                 <h3 className="text-md font-semibold text-white pt-2">2. How We Use Your Data</h3>
