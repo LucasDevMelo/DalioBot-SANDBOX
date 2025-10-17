@@ -440,7 +440,7 @@ const DailyAnalysis: React.FC<Props> = ({ csvData, roboId }) => {
                     contentStyle={chartTooltipContentStyle}
                   />
                   <Legend formatter={(value) => <span style={{ color: '#cbd5e1' }}>{value}</span>} />
-                  <Line type="monotone" dataKey="result" name="Resultado" stroke="#16a34a" strokeWidth={1.8} dot={false} />
+                  <Line type="monotone" dataKey="result" name="Result" stroke="#16a34a" strokeWidth={1.8} dot={false} />
                   <Line type="monotone" dataKey="ma7" name="MA(7)" stroke="#ef4444" strokeDasharray="5 5" dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -461,7 +461,7 @@ const DailyAnalysis: React.FC<Props> = ({ csvData, roboId }) => {
                     wrapperStyle={chartTooltipWrapperStyle}
                     contentStyle={chartTooltipContentStyle}
                   />
-                  <Bar dataKey="result" name="Resultado">
+                  <Bar dataKey="result" name="Result">
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.result >= 0 ? "#16a34a" : "#ef4444"} />
                     ))}
