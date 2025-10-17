@@ -175,7 +175,7 @@ export default function HomePage() {
         </section>
 
         {/* FEATURE SECTIONS */}
-        <section id="recursos" className="py-24 relative overflow-hidden">
+        <section id="recursos" className="py-14 relative overflow-hidden">
           <AnimatedSection>
             <div className="container mx-auto px-4 grid md:grid-cols-2 gap-16 items-center">
               <div>
