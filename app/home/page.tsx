@@ -160,7 +160,7 @@ export default function HomePage() {
             >
               <div className="p-2 bg-white/10 rounded-xl shadow-2xl backdrop-blur-sm border border-white/10">
                 <Image
-                  src="/grafico de rentabilidade.png"
+                  src="/graficoderentabilidade.png"
                   alt="Daliobot Performance Dashboard"
                   width={600}
                   height={450}
@@ -182,7 +182,7 @@ export default function HomePage() {
                 <Link href="/login" className="mt-6 inline-block text-purple-400 font-semibold hover:text-purple-300 transition-colors">I want to master my projections &rarr;</Link>
               </div>
               <div className="p-1 bg-gradient-to-br from-purple-500/50 to-fuchsia-500/50 rounded-xl shadow-lg">
-                <Image src="/grafico de rentabilidade2.png" alt="Profitability Chart" width={500} height={350} className="rounded-lg" />
+                <Image src="/graficoderentabilidade2.png" alt="Profitability Chart" width={500} height={350} className="rounded-lg" />
               </div>
             </div>
           </AnimatedSection>
