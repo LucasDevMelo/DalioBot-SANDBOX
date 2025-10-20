@@ -310,7 +310,6 @@ const DailyAnalysis: React.FC<Props> = ({ csvData, roboId }) => {
           </div>
         </div>
 
-
         {/* Filters */}
         <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700">
           <div className="flex flex-col md:flex-row gap-4 md:items-end flex-wrap">
