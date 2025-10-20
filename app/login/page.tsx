@@ -27,16 +27,16 @@ export default function LoginPage() {
                 case 'auth/invalid-credential':
                 case 'auth/user-not-found':
                 case 'auth/wrong-password':
-                    setErro('Email ou senha inválidos.');
+                    setErro('Invalid email or password.');
                     break;
                 case 'auth/invalid-email':
-                    setErro('O formato do email é inválido.');
+                    setErro('The email format is invalid.');
                     break;
                 case 'auth/too-many-requests':
-                    setErro('Acesso bloqueado temporariamente. Tente novamente mais tarde.');
+                    setErro('Access temporarily blocked. Try again later.');
                     break;
                 default:
-                    setErro('Ocorreu um erro ao tentar fazer login.');
+                    setErro('An error occurred while trying to log in.');
                     break;
             }
         } finally {
@@ -87,14 +87,14 @@ export default function LoginPage() {
                     animate="visible"
                 >
                     <motion.h2 variants={itemVariants} className="text-2xl font-bold text-center text-white mb-6">
-                        Acessar Plataforma
+                        Access Platform
                     </motion.h2>
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <motion.div variants={itemVariants}>
                             <input
                                 type="email"
-                                placeholder="Seu email"
+                                placeholder="Your email"
                                 className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -104,7 +104,7 @@ export default function LoginPage() {
                         <motion.div variants={itemVariants}>
                             <input
                                 type="password"
-                                placeholder="Sua senha"
+                                placeholder="Your password"
                                 className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
@@ -128,15 +128,15 @@ export default function LoginPage() {
                                 disabled={loading}
                                 className="w-full bg-purple-600 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:bg-purple-700 hover:scale-105 shadow-[0_0_15px_theme(colors.purple.500/50)] hover:shadow-[0_0_25px_theme(colors.purple.500)] disabled:bg-slate-600 disabled:shadow-none disabled:hover:scale-100 disabled:cursor-not-allowed"
                             >
-                                {loading ? 'Entrando...' : 'Login'}
+                                {loading ? 'Logging in...' : 'Login'}
                             </button>
                         </motion.div>
                     </form>
                     
                     <motion.p variants={itemVariants} className="text-sm text-center text-gray-400 mt-8">
-                        Ainda não tem uma conta?{' '}
+                        Don't have an account yet?{' '}
                         <Link href="/cadastro" className="font-semibold text-purple-400 hover:underline">
-                            Cadastre-se
+                            Sign up
                         </Link>
                     </motion.p>
                 </motion.div>

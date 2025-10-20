@@ -12,14 +12,14 @@ import { FaCheckCircle } from 'react-icons/fa';
 export default function CadastroPage() {
     const router = useRouter();
     
-    // Estados do formulário
+    // Form states
     const [nome, setNome] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
     const [aceitouTermos, setAceitouTermos] = useState(false);
 
-    // Estados de feedback e UI
+    // Feedback and UI states
     const [erro, setErro] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [mostrarTermos, setMostrarTermos] = useState(false);
@@ -30,15 +30,15 @@ export default function CadastroPage() {
         setErro('');
 
         if (!aceitouTermos) {
-            setErro('Você precisa aceitar os termos de uso.');
+            setErro('You must accept the terms of use.');
             return;
         }
         if (senha !== confirmarSenha) {
-            setErro('As senhas não coincidem.');
+            setErro('The passwords do not match.');
             return;
         }
         if (senha.length < 6) {
-            setErro('A senha deve ter no mínimo 6 caracteres.');
+            setErro('Password must be at least 6 characters long.');
             return;
         }
 
@@ -61,11 +61,11 @@ export default function CadastroPage() {
             setTimeout(() => router.push('/home'), 3000);
 
         } catch (error: any) {
-            console.error('Erro no cadastro:', error.code);
+            console.error('Registration error:', error.code);
             if (error.code === 'auth/email-already-in-use') {
-                setErro('Este endereço de email já está em uso.');
+                setErro('This email address is already in use.');
             } else {
-                setErro('Ocorreu um erro inesperado. Tente novamente.');
+                setErro('An unexpected error occurred. Please try again.');
             }
         } finally {
             setIsLoading(false);
@@ -127,30 +127,30 @@ export default function CadastroPage() {
                                 exit={{ opacity: 0, y: -30 }}
                             >
                                 <motion.h2 variants={itemVariants} className="text-2xl font-bold text-center text-white mb-6">
-                                    Crie sua Conta Grátis
+                                    Create Your Free Account
                                 </motion.h2>
                                 <form onSubmit={handleCadastro} className="space-y-5">
-                                    <motion.input variants={itemVariants} type="text" placeholder="Nome completo" value={nome} onChange={(e) => setNome(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
-                                    <motion.input variants={itemVariants} type="email" placeholder="Seu melhor email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
-                                    <motion.input variants={itemVariants} type="password" placeholder="Crie uma senha" value={senha} onChange={(e) => setSenha(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
-                                    <motion.input variants={itemVariants} type="password" placeholder="Confirme sua senha" value={confirmarSenha} onChange={(e) => setConfirmarSenha(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                                    <motion.input variants={itemVariants} type="text" placeholder="Full name" value={nome} onChange={(e) => setNome(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                                    <motion.input variants={itemVariants} type="email" placeholder="Your best email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                                    <motion.input variants={itemVariants} type="password" placeholder="Create a password" value={senha} onChange={(e) => setSenha(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
+                                    <motion.input variants={itemVariants} type="password" placeholder="Confirm your password" value={confirmarSenha} onChange={(e) => setConfirmarSenha(e.target.value)} required className="w-full px-4 py-3 bg-slate-900/70 border border-slate-600 rounded-lg placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500" />
                                     
                                     <motion.label variants={itemVariants} className="flex items-center text-sm gap-3 text-gray-400 cursor-pointer">
                                         <input type="checkbox" checked={aceitouTermos} onChange={(e) => setAceitouTermos(e.target.checked)} className="sr-only peer" />
                                         <div className="w-5 h-5 bg-slate-700 rounded border border-slate-600 peer-checked:bg-purple-600 peer-checked:border-purple-500 flex items-center justify-center transition-colors">
                                            {aceitouTermos && <FaCheckCircle className="text-white text-xs" />}
                                         </div>
-                                        <span>Li e aceito os <button type="button" onClick={() => setMostrarTermos(true)} className="text-purple-400 hover:underline font-semibold">termos de uso</button></span>
+                                        <span>I have read and agree to the <button type="button" onClick={() => setMostrarTermos(true)} className="text-purple-400 hover:underline font-semibold">terms of use</button></span>
                                     </motion.label>
                                     
                                     {erro && <motion.p initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-500 text-sm text-center">{erro}</motion.p>}
                                     
                                     <motion.button variants={itemVariants} type="submit" disabled={isLoading} className="w-full bg-purple-600 text-white font-bold py-3 rounded-lg transition-all duration-300 ease-in-out hover:bg-purple-700 hover:scale-105 shadow-[0_0_15px_theme(colors.purple.500/50)] disabled:bg-slate-600 disabled:shadow-none disabled:cursor-not-allowed">
-                                        {isLoading ? 'Criando conta...' : 'Criar Conta e Acessar'}
+                                        {isLoading ? 'Creating account...' : 'Create Account and Access'}
                                     </motion.button>
                                 </form>
                                 <motion.p variants={itemVariants} className="text-sm text-center text-gray-400 mt-6">
-                                    Já possui uma conta? <Link href="/login" className="font-semibold text-purple-400 hover:underline">Faça login</Link>
+                                    Already have an account? <Link href="/login" className="font-semibold text-purple-400 hover:underline">Log in</Link>
                                 </motion.p>
                             </motion.div>
                         ) : (
@@ -162,9 +162,9 @@ export default function CadastroPage() {
                                 transition={{ type: 'spring' }}
                             >
                                 <FaCheckCircle className="text-5xl text-green-500 mx-auto mb-4" />
-                                <h2 className="text-2xl font-bold text-white">Conta Criada!</h2>
+                                <h2 className="text-2xl font-bold text-white">Account Created!</h2>
                                 <p className="text-gray-300 mt-2">
-                                    Bem-vindo(a) ao DalioBot Beta! Você será redirecionado em instantes.
+                                    Welcome to DalioBot Beta! You will be redirected in a moment.
                                 </p>
                             </motion.div>
                         )}
@@ -175,10 +175,10 @@ export default function CadastroPage() {
             {mostrarTermos && (
                 <Modal closeModal={() => setMostrarTermos(false)}>
                     <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
-                        <h2 className="text-xl font-bold text-white">Termos de Uso</h2>
+                        <h2 className="text-xl font-bold text-white">Terms of Use</h2>
                         <button onClick={() => setMostrarTermos(false)} className="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
                     </div>
-                    {/* CORREÇÃO AQUI: Texto formatado com parágrafos e listas */}
+                    {/* O conteúdo dos termos já estava em inglês */}
                     <div className="text-sm text-gray-300 space-y-4 overflow-y-auto pr-2">
                         <p>
                             Please carefully read the terms and conditions below ("Terms of Use") so that you can enjoy our platform and all the services made available through it, all of which are the exclusive property of the website https://daliobot-en.netlify.app/. By using the platform, our products and/or services, including our content made available through the Platform, you are agreeing to these Terms of Use. If you do not agree, we ask that you do not use our products and/or services, as your use represents your full acceptance of these Terms of Use.
@@ -194,7 +194,7 @@ export default function CadastroPage() {
                             <li>The "DalioBot" website is not responsible for any type of financial transaction between the user and the developer/company that is commercializing the robot. We only connect investors and validated automated strategies. The entire hiring process is done directly by the strategy's owner and the user.</li>
                             <li>The statistical data of all robots are provided directly by the developer. Therefore, the accuracy of the information is their sole responsibility.</li>
                             <li>By registering a robot, you agree that the data contained in the import CSV has not been manipulated.</li>
-                            <li>The site offers no warranty linked to the Platform, or its use, and is not responsible for any damages or losses that result from its use. The use of the Platform and the robots disclosed is the sole responsibility of the user, who must use their own knowledge and techniques to decide on their investments.</li>
+                            <li>The site offers no warranty linked to the Platform, or its use, and is not responsible for any damages or losses that result from its use. The use of the Platform and the robots disclosed is the sole responsibility of theD user, who must use their own knowledge and techniques to decide on their investments.</li>
                         </ol>
                         <p className='font-bold text-white pt-2'>
                             Using the Beta Version
@@ -204,7 +204,7 @@ export default function CadastroPage() {
                         </p>
                     </div>
                     <div className="mt-6 text-right border-t border-slate-700 pt-4">
-                        <button onClick={() => setMostrarTermos(false)} className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold">Fechar</button>
+                        <button onClick={() => setMostrarTermos(false)} className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold">Close</button>
                     </div>
                 </Modal>
             )}
