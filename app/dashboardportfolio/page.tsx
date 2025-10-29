@@ -9,6 +9,7 @@ import { useAuth } from '@/src/context/authcontext';
 import Topbar from '../../components/topbar';
 import Sidebar from '../../components/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReferenceArea } from 'recharts';
 
 import {
     LineChart,
@@ -427,6 +428,10 @@ function DashboardContent() {
     const [showStatsPopup, setShowStatsPopup] = useState(false); //
     const [showRiskPopup, setShowRiskPopup] = useState(false); //
     const [showDrawdownPopup, setShowDrawdownPopup] = useState(false); //
+    const [showLucroCurvePopup, setShowLucroCurvePopup] = useState(false);
+    const [showStagnationVisible, setShowStagnationVisible] = useState(false);
+
+
 
     // States for Correlation Popup
     const [showCorrelationPopup, setShowCorrelationPopup] = useState(false);
@@ -1264,11 +1269,41 @@ function DashboardContent() {
 
                                     <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <Card className="md:col-span-2 bg-slate-800 border-slate-700">
-                                            <CardHeader> <CardTitle className="text-white text-base font-medium">Accumulated Profit Curve</CardTitle> </CardHeader>
+                                            <CardHeader className="flex justify-between items-center">
+                                                <CardTitle className="text-white text-base font-medium">Accumulated Profit Curve</CardTitle>
+                                                <div className="flex items-center space-x-3">
+                                                    <button
+                                                        onClick={() => setShowLucroCurvePopup(true)}
+                                                        className="text-xs text-purple-400 hover:underline"
+                                                    >
+                                                        Expand
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setShowStagnationVisible(prev => !prev)}
+                                                        className={`text-xs ${showStagnationVisible ? 'text-red-400' : 'text-gray-400'} hover:underline`}
+                                                    >
+                                                        {showStagnationVisible ? 'Hide stagnation' : 'Show stagnation'}
+                                                    </button>
+                                                </div>
+                                            </CardHeader>
+
                                             <CardContent>
                                                 <ResponsiveContainer width="100%" height={300}>
                                                     <LineChart data={lucroCurveData}>
                                                         <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+
+                                                        {/* === ÁREA DE ESTAGNAÇÃO === */}
+                                                        {showStagnationVisible && estagnacaoInfo && (
+                                                            <ReferenceArea
+                                                                x1={estagnacaoInfo.inicio}
+                                                                x2={estagnacaoInfo.fim}
+                                                                strokeOpacity={0}
+                                                                fill="rgba(220, 38, 38, 0.15)" // vermelho suave compatível com tema dark
+                                                            />
+                                                        )}
+
+                                                        {/* ========================== */}
+
                                                         <XAxis
                                                             dataKey="DATE"
                                                             tickFormatter={(dateStr) =>
@@ -1314,6 +1349,7 @@ function DashboardContent() {
                                                         />
                                                     </LineChart>
                                                 </ResponsiveContainer>
+
                                             </CardContent>
                                         </Card>
                                         <div className="flex flex-col space-y-4">
@@ -1340,7 +1376,7 @@ function DashboardContent() {
                                                     </CardHeader>
                                                     <CardContent>
                                                         <p className="text-2xl font-bold text-red-500">
-                                                            _all:               <NumericFormat value={drawdownInfo.maiorLoss.valor} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale />
+                                                            <NumericFormat value={drawdownInfo.maiorLoss.valor} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale />
                                                         </p>
                                                         <p className="text-xs text-gray-400">
                                                             {drawdownInfo.maiorLoss.data ? new Date(drawdownInfo.maiorLoss.data).toLocaleDateString('pt-BR') : '-'}
@@ -1988,6 +2024,72 @@ function DashboardContent() {
                             </div>
                         </div>
                     )}
+                    {showLucroCurvePopup && (
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                            <div className="bg-slate-900 rounded-2xl p-4 w-full max-w-6xl relative border border-slate-700">
+                                <button
+                                    onClick={() => setShowLucroCurvePopup(false)}
+                                    className="absolute top-3 right-3 text-gray-400 hover:text-white text-lg"
+                                >
+                                    ✕
+                                </button>
+                                <h2 className="text-xl font-semibold text-white mb-4 text-center">
+                                    Accumulated Profit Curve
+                                </h2>
+                                <div className="w-full h-[70vh]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={lucroCurveData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+                                            <XAxis
+                                                dataKey="DATE"
+                                                tickFormatter={(dateStr) =>
+                                                    new Date(dateStr).toLocaleDateString('pt-BR', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: '2-digit'
+                                                    })
+                                                }
+                                                tick={{ fontSize: 12, fill: chartTextFill }}
+                                                interval="preserveStartEnd"
+                                            />
+                                            <YAxis
+                                                domain={['auto', 'auto']}
+                                                tickFormatter={(value) =>
+                                                    `$ ${Number(value).toLocaleString('pt-BR', {
+                                                        minimumFractionDigits: 0,
+                                                        maximumFractionDigits: 0
+                                                    })}`
+                                                }
+                                                tick={{ fontSize: 12, fill: chartTextFill }}
+                                            />
+                                            <Tooltip
+                                                formatter={(value: number) => [
+                                                    `$ ${value.toLocaleString('pt-BR', {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2
+                                                    })}`,
+                                                    "Retained Profit"
+                                                ]}
+                                                labelFormatter={(label: string) =>
+                                                    new Date(label).toLocaleDateString('pt-BR')
+                                                }
+                                                wrapperStyle={chartTooltipWrapperStyle}
+                                                contentStyle={chartTooltipContentStyle}
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="LUCRO"
+                                                stroke="#a855f7"
+                                                strokeWidth={2}
+                                                dot={false}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                 </main>
             </div>
         </div>
