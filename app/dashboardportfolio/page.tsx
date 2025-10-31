@@ -25,6 +25,8 @@ import {
     YAxis,
     Tooltip,
     ResponsiveContainer,
+    ComposedChart,
+    Area,
 } from 'recharts';
 
 interface CsvData {
@@ -429,7 +431,8 @@ function DashboardContent() {
     const [showRiskPopup, setShowRiskPopup] = useState(false); //
     const [showDrawdownPopup, setShowDrawdownPopup] = useState(false); //
     const [showLucroCurvePopup, setShowLucroCurvePopup] = useState(false);
-    const [showStagnationVisible, setShowStagnationVisible] = useState(false);
+    // NOVO ESTADO ADICIONADO
+    const [showDrawdownVisible, setShowDrawdownVisible] = useState(false);
 
 
 
@@ -593,7 +596,7 @@ function DashboardContent() {
     }, [csvData, saldoInicial, calcularMetricasDependentes]); //
 
     // ==================================================================
-    // ADICIONE ESTA NOVA FUNÇÃO
+    // FUNÇÃO QUE CALCULA MÉTRICAS COM DADOS (Mantida)
     // ==================================================================
     const calcularMetricasComDados = (dadosParaCalculo: CsvData[]) => {
         if (dadosParaCalculo.length > 0) {
@@ -741,16 +744,16 @@ function DashboardContent() {
                         }
                     }
                     diasEstagnado = 0;
-                    inicioEstagnadoTemp = atual.DATE;
+                    inicioPicoTemp = atual.DATE;
                 } else {
-                    if (inicioEstagnadoTemp) {
-                        diasEstagnado = (new Date(atual.DATE).getTime() - new Date(inicioEstagnadoTemp).getTime()) / (1000 * 60 * 60 * 24);
+                    if (inicioPicoTemp) {
+                        diasEstagnado = (new Date(atual.DATE).getTime() - new Date(inicioPicoTemp).getTime()) / (1000 * 60 * 60 * 24);
                     }
                 }
             }
             if (diasEstagnado > maiorEstagnacaoDias) {
                 maiorEstagnacaoDias = diasEstagnado;
-                dataInicioEstFinal = inicioEstagnadoTemp;
+                dataInicioEstFinal = inicioPicoTemp;
                 if (dadosParaCalculo.length > 0) {
                     dataFimEstFinal = dadosParaCalculo[dadosParaCalculo.length - 1].DATE;
                 }
@@ -771,20 +774,29 @@ function DashboardContent() {
         }
     };
     // ==================================================================
-    // ADICIONE ESTE BLOCO DE CÓDIGO
+    // BLOCO DE CÓDIGO ATUALIZADO (Combina Lucro e Drawdown em Percentual)
     // ==================================================================
-    const lucroCurveData = useMemo(() => {
+    const chartData = useMemo(() => {
         if (csvData.length === 0) return [];
 
-        // O equity inicial é o valor do primeiro dia dos dados (já filtrados)
+        let pico = csvData[0].EQUITY;
         const initialEquity = csvData[0].EQUITY;
 
-        // Mapeamos os dados para criar uma nova propriedade 'LUCRO'
-        return csvData.map(row => ({
-            ...row, // Mantém os dados originais como DATE
-            LUCRO: row.EQUITY - initialEquity, // Calcula o lucro acumulado
-        }));
-    }, [csvData]); // Este hook será recalculado sempre que csvData mudar
+        return csvData.map(row => {
+            pico = Math.max(pico, row.EQUITY);
+            const drawdownValue = row.EQUITY - pico;
+            const DD_percentual = pico !== 0 ? (drawdownValue / pico) * 100 : 0;
+
+            return {
+                ...row,
+                LUCRO: row.EQUITY - initialEquity,
+                DD: DD_percentual,
+                timestamp: new Date(row.DATE).getTime(), // ✅ campo numérico para o eixo X
+            };
+        });
+    }, [csvData]);
+
+
 
     useEffect(() => {
         const fetchRoboData = async () => {
@@ -1082,18 +1094,6 @@ function DashboardContent() {
     }, [showCorrelationPopup, user, estrategias, fetchAndCalculateCorrelations]);
 
 
-    const drawdownSeries = useMemo(() => { //
-        if (csvData.length === 0) return []; //
-        let pico = csvData[0].EQUITY; //
-        return csvData.map(row => { //
-            pico = Math.max(pico, row.EQUITY); //
-            return { //
-                DATE: row.DATE, //
-                DD: row.EQUITY - pico, //
-            };
-        });
-    }, [csvData]); //
-
     const monteCarloData = useMemo(() => { //
         if (csvData.length < 2) return []; //
 
@@ -1278,80 +1278,158 @@ function DashboardContent() {
                                                     >
                                                         Expand
                                                     </button>
+                                                    
                                                     <button
-                                                        onClick={() => setShowStagnationVisible(prev => !prev)}
-                                                        className={`text-xs ${showStagnationVisible ? 'text-red-400' : 'text-gray-400'} hover:underline`}
+                                                        onClick={() => setShowDrawdownVisible(prev => !prev)}
+                                                        className={`text-xs ${showDrawdownVisible ? 'text-red-500' : 'text-gray-400'} hover:underline`}
                                                     >
-                                                        {showStagnationVisible ? 'Hide stagnation' : 'Show stagnation'}
+                                                        {showDrawdownVisible ? 'Hide Drawdown' : 'Show Drawdown'}
                                                     </button>
                                                 </div>
                                             </CardHeader>
 
                                             <CardContent>
-                                                <ResponsiveContainer width="100%" height={300}>
-                                                    <LineChart data={lucroCurveData}>
-                                                        <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+                                                {/* ✅ Wrapper para conter os dois ResponsiveContainer sem erro */}
+                                                <div className="flex flex-col space-y-2">
 
-                                                        {/* === ÁREA DE ESTAGNAÇÃO === */}
-                                                        {showStagnationVisible && estagnacaoInfo && (
-                                                            <ReferenceArea
-                                                                x1={estagnacaoInfo.inicio}
-                                                                x2={estagnacaoInfo.fim}
-                                                                strokeOpacity={0}
-                                                                fill="rgba(220, 38, 38, 0.15)" // vermelho suave compatível com tema dark
-                                                            />
-                                                        )}
+                                                    {/* === GRÁFICO 1: Lucro Acumulado === */}
+                                                    <div className="w-full h-[300px]">
+                                                        <div className="w-full h-[300px]">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <LineChart data={chartData}>
+                                                                    <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
 
-                                                        {/* ========================== */}
+                                                                    <XAxis
+                                                                        dataKey="timestamp"
+                                                                        type="number"                      // ✅ Novo: eixo numérico
+                                                                        scale="time"                       // ✅ Novo: eixo temporal real
+                                                                        domain={['dataMin', 'dataMax']}    // ✅ Novo: cobre todo o período
+                                                                        tickFormatter={(timestamp) =>
+                                                                            new Date(timestamp).toLocaleDateString("pt-BR", {
+                                                                                day: "2-digit",
+                                                                                month: "2-digit",
+                                                                                year: "2-digit",
+                                                                            })
+                                                                        }
+                                                                        tick={{ fontSize: 10, fill: chartTextFill }}
+                                                                        interval="preserveStartEnd"
+                                                                    />
 
-                                                        <XAxis
-                                                            dataKey="DATE"
-                                                            tickFormatter={(dateStr) =>
-                                                                new Date(dateStr).toLocaleDateString('pt-BR', {
-                                                                    day: '2-digit',
-                                                                    month: '2-digit',
-                                                                    year: '2-digit'
-                                                                })
-                                                            }
-                                                            tick={{ fontSize: 10, fill: chartTextFill }}
-                                                            interval="preserveStartEnd"
-                                                        />
-                                                        <YAxis
-                                                            domain={['auto', 'auto']}
-                                                            tickFormatter={(value) =>
-                                                                `$ ${Number(value).toLocaleString('pt-BR', {
-                                                                    minimumFractionDigits: 0,
-                                                                    maximumFractionDigits: 0
-                                                                })}`
-                                                            }
-                                                            tick={{ fontSize: 12, fill: chartTextFill }}
-                                                        />
-                                                        <Tooltip
-                                                            formatter={(value: number) => [
-                                                                `$ ${value.toLocaleString('pt-BR', {
-                                                                    minimumFractionDigits: 2,
-                                                                    maximumFractionDigits: 2
-                                                                })}`,
-                                                                "Retained Profit"
-                                                            ]}
-                                                            labelFormatter={(label: string) =>
-                                                                new Date(label).toLocaleDateString('pt-BR')
-                                                            }
-                                                            wrapperStyle={chartTooltipWrapperStyle}
-                                                            contentStyle={chartTooltipContentStyle}
-                                                        />
-                                                        <Line
-                                                            type="monotone"
-                                                            dataKey="LUCRO"
-                                                            stroke="#a855f7"
-                                                            strokeWidth={2}
-                                                            dot={false}
-                                                        />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
+                                                                    <YAxis
+                                                                        yAxisId="lucro"
+                                                                        domain={["auto", "auto"]}
+                                                                        tickFormatter={(value) =>
+                                                                            `$ ${Number(value).toLocaleString("pt-BR", {
+                                                                                minimumFractionDigits: 0,
+                                                                                maximumFractionDigits: 0,
+                                                                            })}`
+                                                                        }
+                                                                        tick={{ fontSize: 11, fill: chartTextFill }}
+                                                                    />
 
+                                                                    <Tooltip
+                                                                        formatter={(value: number, name: string) => {
+                                                                            const label =
+                                                                                name === "DD" ? "Drawdown (%)" : "Lucro Acumulado (Equity)";
+                                                                            const formattedValue =
+                                                                                name === "DD"
+                                                                                    ? `${value.toFixed(2)}%`
+                                                                                    : `$ ${value.toLocaleString("pt-BR", {
+                                                                                        minimumFractionDigits: 2,
+                                                                                        maximumFractionDigits: 2,
+                                                                                    })}`;
+                                                                            return [formattedValue, label];
+                                                                        }}
+                                                                        labelFormatter={(label: string | number) =>
+                                                                            new Date(label).toLocaleDateString("pt-BR")
+                                                                        }
+                                                                        wrapperStyle={chartTooltipWrapperStyle}
+                                                                        contentStyle={chartTooltipContentStyle}
+                                                                    />
+
+                                                                    {/* Linha do lucro acumulado */}
+                                                                    <Line
+                                                                        yAxisId="lucro"
+                                                                        type="monotone"
+                                                                        dataKey="LUCRO"
+                                                                        stroke="#a855f7"
+                                                                        strokeWidth={2}
+                                                                        dot={false}
+                                                                        isAnimationActive={false}
+                                                                    />
+                                                                </LineChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+
+                                                    </div>
+
+                                                    {/* === GRÁFICO 2: Drawdown === */}
+                                                    {showDrawdownVisible && (
+                                                        <div className="w-full h-[80px]">
+                                                            <ResponsiveContainer width="100%" height="100%">
+                                                                <LineChart
+                                                                    data={chartData}
+                                                                    margin={{ top: 0, right: 30, left: 30, bottom: 20 }}
+                                                                >
+                                                                    <CartesianGrid
+                                                                        strokeDasharray="3 3"
+                                                                        stroke={chartGridStroke}
+                                                                        vertical={false}
+                                                                    />
+
+                                                                    <XAxis
+                                                                        // ✅ ANTES: dataKey="DATE"
+                                                                        // ✅ AGORA: Usar o timestamp numérico para alinhamento com o gráfico principal
+                                                                        dataKey="timestamp"
+                                                                        tickFormatter={(timestamp) => // O formatter agora recebe o timestamp
+                                                                            new Date(timestamp).toLocaleDateString("pt-BR", {
+                                                                                day: "2-digit", month: "2-digit", year: "2-digit",
+                                                                            })
+                                                                        }
+                                                                        tick={{ fontSize: 10, fill: chartTextFill }}
+                                                                        interval="preserveStartEnd"
+                                                                    />
+
+                                                                    <YAxis
+                                                                        yAxisId="drawdown"
+                                                                        domain={["auto", 0]}
+                                                                        orientation="left"
+                                                                        tickLine={false}
+                                                                        axisLine={false}
+                                                                        tick={{ fontSize: 9, fill: "#ef4444" }}
+                                                                        tickCount={3}
+                                                                        allowDataOverflow={true}
+                                                                        tickFormatter={(value) => `${value.toFixed(1)}%`}
+                                                                    />
+
+                                                                    <Tooltip
+                                                                        formatter={(value: number) => [
+                                                                            `${value.toFixed(2)}%`,
+                                                                            "Máx. Drawdown (%)",
+                                                                        ]}
+                                                                        labelFormatter={(label: string) =>
+                                                                            new Date(label).toLocaleDateString("pt-BR")
+                                                                        }
+                                                                        wrapperStyle={chartTooltipWrapperStyle}
+                                                                        contentStyle={chartTooltipContentStyle}
+                                                                    />
+
+                                                                    <Line
+                                                                        yAxisId="drawdown"
+                                                                        dataKey="DD"
+                                                                        stroke="#ef4444"
+                                                                        strokeWidth={1}
+                                                                        dot={false}
+                                                                        isAnimationActive={false}
+                                                                    />
+                                                                </LineChart>
+                                                            </ResponsiveContainer>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </CardContent>
                                         </Card>
+
                                         <div className="flex flex-col space-y-4">
                                             {drawdownInfo && (
                                                 <Card className="bg-slate-800 border-slate-700">
@@ -1407,6 +1485,7 @@ function DashboardContent() {
                                             <ResponsiveContainer width="100%" height={250}>
                                                 <BarChart data={lucroAno} barSize={50}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+
                                                     <XAxis dataKey="ano" tick={{ fontSize: 12, fill: chartTextFill }} />
                                                     <YAxis
                                                         tickFormatter={(value) =>
@@ -1816,11 +1895,13 @@ function DashboardContent() {
                                     <button onClick={() => setShowDrawdownPopup(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
                                 </div>
                                 <ResponsiveContainer width="100%" height={400}>
-                                    <LineChart data={drawdownSeries}>
+                                    {/* Nota: O Drawdown Value (em $) é diferente do Drawdown Percentual (%) */}
+                                    <LineChart data={chartData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
                                         <XAxis dataKey="DATE" tick={{ fontSize: 10, fill: chartTextFill }}
                                             tickFormatter={(dateStr) => new Date(dateStr).toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })}
                                             interval="preserveStartEnd" />
+                                        {/* Usamos o YAxis do lucro, mas com domínio negativo, pois o valor absoluto do DD está em `drawdownInfo.valor` */}
                                         <YAxis tickFormatter={(val) => `$ ${Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} tick={{ fontSize: 12, fill: chartTextFill }} />
                                         <Tooltip
                                             labelFormatter={(dateStr) => new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -1929,7 +2010,7 @@ function DashboardContent() {
                                                 <div className="h-2 bg-purple-400 rounded-full w-1/2 mb-1 mt-1"></div>
                                                 <p className="text-right text-gray-400 text-xs">
                                                     Estimated Average Monthly Return: <NumericFormat value={retornoConservador} displayType="text" decimalScale={2} fixedDecimalScale suffix="%" />
-                                                    s                     </p>
+                                                </p>
                                             </div>
                                             <p className="text-xs text-gray-500 mt-3">* The suggested capital is an estimate based on the maximum drawdown from the backtest. Past performance does not guarantee future performance. Invest wisely.
                                             </p>
@@ -2024,6 +2105,8 @@ function DashboardContent() {
                             </div>
                         </div>
                     )}
+
+
                     {showLucroCurvePopup && (
                         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                             <div className="bg-slate-900 rounded-2xl p-4 w-full max-w-6xl relative border border-slate-700">
@@ -2036,55 +2119,132 @@ function DashboardContent() {
                                 <h2 className="text-xl font-semibold text-white mb-4 text-center">
                                     Accumulated Profit Curve
                                 </h2>
-                                <div className="w-full h-[70vh]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={lucroCurveData}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
-                                            <XAxis
-                                                dataKey="DATE"
-                                                tickFormatter={(dateStr) =>
-                                                    new Date(dateStr).toLocaleDateString('pt-BR', {
-                                                        day: '2-digit',
-                                                        month: '2-digit',
-                                                        year: '2-digit'
-                                                    })
-                                                }
-                                                tick={{ fontSize: 12, fill: chartTextFill }}
-                                                interval="preserveStartEnd"
-                                            />
-                                            <YAxis
-                                                domain={['auto', 'auto']}
-                                                tickFormatter={(value) =>
-                                                    `$ ${Number(value).toLocaleString('pt-BR', {
-                                                        minimumFractionDigits: 0,
-                                                        maximumFractionDigits: 0
-                                                    })}`
-                                                }
-                                                tick={{ fontSize: 12, fill: chartTextFill }}
-                                            />
-                                            <Tooltip
-                                                formatter={(value: number) => [
-                                                    `$ ${value.toLocaleString('pt-BR', {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2
-                                                    })}`,
-                                                    "Retained Profit"
-                                                ]}
-                                                labelFormatter={(label: string) =>
-                                                    new Date(label).toLocaleDateString('pt-BR')
-                                                }
-                                                wrapperStyle={chartTooltipWrapperStyle}
-                                                contentStyle={chartTooltipContentStyle}
-                                            />
-                                            <Line
-                                                type="monotone"
-                                                dataKey="LUCRO"
-                                                stroke="#a855f7"
-                                                strokeWidth={2}
-                                                dot={false}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
+                                {/* CONTÊINER FLEX COM ALTURA FIXA PARA EMPILHAR OS GRÁFICOS */}
+                                <div className="w-full flex flex-col" style={{ height: '70vh' }}>
+
+                                    {/* GRÁFICO 1: LUCRO PRINCIPAL (75% da altura) */}
+                                    <div style={{ height: '75%' }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={chartData}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+
+                                               
+
+                                                <XAxis
+                                                    dataKey="timestamp"
+                                                    type="number"                      // ✅ Novo: eixo numérico
+                                                    scale="time"                       // ✅ Novo: eixo temporal real
+                                                    domain={['dataMin', 'dataMax']}    // ✅ Novo: cobre todo o período
+                                                    tickFormatter={(timestamp) =>
+                                                        new Date(timestamp).toLocaleDateString("pt-BR", {
+                                                            day: "2-digit",
+                                                            month: "2-digit",
+                                                            year: "2-digit",
+                                                        })
+                                                    }
+                                                    tick={{ fontSize: 10, fill: chartTextFill }}
+                                                    interval="preserveStartEnd"
+                                                />
+
+                                                <XAxis
+                                                    // 🔥 Corrigido: usar campo numérico `timestamp` no chartData
+                                                    dataKey="timestamp"
+                                                    tickFormatter={(timestamp) =>
+                                                        new Date(timestamp).toLocaleDateString("pt-BR", {
+                                                            day: "2-digit", month: "2-digit", year: "2-digit",
+                                                        })
+                                                    }
+                                                    tick={{ fontSize: 10, fill: chartTextFill }}
+                                                    interval="preserveStartEnd"
+                                                    hide={true}
+                                                />
+
+                                                {/* Y-AXIS PARA LUCRO (Eixo principal à esquerda) */}
+                                                <YAxis
+                                                    yAxisId="lucro" // ID: lucro
+                                                    domain={['auto', 'auto']}
+                                                    tickFormatter={(value) =>
+                                                        `$ ${Number(value).toLocaleString('pt-BR', {
+                                                            minimumFractionDigits: 0,
+                                                            maximumFractionDigits: 0
+                                                        })}`
+                                                    }
+                                                    tick={{ fontSize: 12, fill: chartTextFill }}
+                                                />
+                                                <Tooltip
+                                                    formatter={(value: number, name: string) => {
+                                                        const label = name === 'DD' ? 'Máx. Drawdown (%)' : 'Lucro Retido';
+                                                        const formattedValue = name === "DD"
+                                                            ? `${value.toFixed(2)}%`
+                                                            : `$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                                        return [formattedValue, label];
+                                                    }}
+                                                    labelFormatter={(label: string) =>
+                                                        new Date(label).toLocaleDateString('pt-BR')
+                                                    }
+                                                    wrapperStyle={chartTooltipWrapperStyle}
+                                                    contentStyle={chartTooltipContentStyle}
+                                                />
+                                                <Line
+                                                    yAxisId="lucro"
+                                                    type="monotone"
+                                                    dataKey="LUCRO"
+                                                    stroke="#a855f7"
+                                                    strokeWidth={2}
+                                                    dot={false}
+                                                    isAnimationActive={false}
+                                                />
+                                            </LineChart>
+
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    {/* GRÁFICO 2: DRAWDOWN (25% da altura, Alinhado) */}
+                                    <div style={{ height: '25%' }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={chartData} margin={{ top: 0, right: 30, left: 30, bottom: 20 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+
+                                                <XAxis
+                                                    dataKey="DATE"
+                                                    tickFormatter={(dateStr) =>
+                                                        new Date(dateStr).toLocaleDateString('pt-BR', {
+                                                            day: '2-digit',
+                                                            month: '2-digit',
+                                                            year: '2-digit'
+                                                        })
+                                                    }
+                                                    tick={{ fontSize: 12, fill: chartTextFill }}
+                                                    interval="preserveStartEnd"
+                                                />
+                                                <YAxis
+                                                    yAxisId="drawdown"
+                                                    domain={['auto', 0]}
+                                                    orientation="left"
+                                                    tickLine={false}
+                                                    axisLine={false}
+                                                    tick={{ fontSize: 10, fill: '#ef4444' }}
+                                                    tickCount={3}
+                                                    allowDataOverflow={true}
+                                                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+                                                />
+                                                <Tooltip
+                                                    formatter={(value: number) => [`${value.toFixed(2)}%`, "Máx. Drawdown (%)"]}
+                                                    labelFormatter={(label: string) => new Date(label).toLocaleDateString('pt-BR')}
+                                                    wrapperStyle={chartTooltipWrapperStyle}
+                                                    contentStyle={chartTooltipContentStyle}
+                                                />
+                                                <Line
+                                                    yAxisId="drawdown"
+                                                    dataKey="DD"
+                                                    stroke="#ef4444"
+                                                    strokeWidth={1}
+                                                    dot={false}
+                                                    isAnimationActive={false}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
                             </div>
                         </div>
