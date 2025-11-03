@@ -472,48 +472,43 @@ function DashboardContent() {
   const dailyPerformanceData = useMemo(() => {
     if (csvData.length < 2) return {};
 
-    // 1️⃣ Primeiro, pegamos apenas o último registro de cada dia
-    const dailyEquityMap = new Map<string, number>();
-    csvData.forEach((row) => {
-      const dateObj = new Date(row.DATE);
-      if (isNaN(dateObj.getTime())) return;
-      const dateKey = dateObj.toISOString().split("T")[0]; // yyyy-mm-dd
-      // sempre sobrescreve, então mantém o último equity do dia
-      dailyEquityMap.set(dateKey, row.EQUITY);
+    // 1. Encontrar o último equity de cada dia
+    const dailyLastEquity = new Map<string, number>();
+    csvData.forEach(row => {
+      // Usa a data completa para encontrar o último registro, mas armazena pela chave YYYY-MM-DD
+      const dateKey = row.DATE.split('T')[0]; // Pega "AAAA-MM-DD"
+      dailyLastEquity.set(dateKey, row.EQUITY);
     });
 
-    // 2️⃣ Ordenamos as datas
-    const orderedDates = Array.from(dailyEquityMap.keys()).sort(
-      (a, b) => new Date(a).getTime() - new Date(b).getTime()
-    );
+    // 2. Ordenar os dias
+    const sortedDays = Array.from(dailyLastEquity.keys()).sort();
 
-    // 3️⃣ Calculamos a variação diária (diferença entre dias consecutivos)
-    const dailyResults: { [year: number]: { [month: number]: { [day: number]: number } } } = {};
+    // 3. Calcular a variação diária
+    const dailyEquityVariation: { [year: number]: { [month: number]: { [day: number]: number } } } = {};
 
-    for (let i = 1; i < orderedDates.length; i++) {
-      const currentDate = new Date(orderedDates[i]);
-      const previousDate = new Date(orderedDates[i - 1]);
-      const currentEquity = dailyEquityMap.get(orderedDates[i])!;
-      const previousEquity = dailyEquityMap.get(orderedDates[i - 1])!;
+    for (let i = 1; i < sortedDays.length; i++) {
+      const currentDayKey = sortedDays[i];
+      const prevDayKey = sortedDays[i - 1];
 
-      // só considera se for o mesmo mês e ano
-      if (
-        currentDate.getFullYear() === previousDate.getFullYear() &&
-        currentDate.getMonth() === previousDate.getMonth()
-      ) {
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth();
-        const day = currentDate.getDate();
-        const dailyResult = currentEquity - previousEquity;
+      const currentEquity = dailyLastEquity.get(currentDayKey)!;
+      const prevEquity = dailyLastEquity.get(prevDayKey)!;
 
-        if (!dailyResults[year]) dailyResults[year] = {};
-        if (!dailyResults[year][month]) dailyResults[year][month] = {};
+      const variation = currentEquity - prevEquity;
 
-        dailyResults[year][month][day] = dailyResult;
-      }
+      // Adiciona +1 ao mês porque new Date() com "AAAA-MM-DD" trata como UTC
+      // e pode causar problemas de fuso. new Date(year, month, day) é mais seguro
+      const [yearStr, monthStr, dayStr] = currentDayKey.split('-');
+      const year = Number(yearStr);
+      const month = Number(monthStr) - 1; // Mês no JS é 0-11
+      const day = Number(dayStr);
+
+      if (!dailyEquityVariation[year]) dailyEquityVariation[year] = {};
+      if (!dailyEquityVariation[year][month]) dailyEquityVariation[year][month] = {};
+
+      dailyEquityVariation[year][month][day] = variation;
     }
 
-    return dailyResults;
+    return dailyEquityVariation;
   }, [csvData]);
 
 
@@ -535,36 +530,55 @@ function DashboardContent() {
 
         if (snapshot.exists()) {
           const data = snapshot.val();
+
+          // --- 1. SET MÉTRICAS DESCRITIVAS ---
           setDescricao(data.descricao || '');
           setMercado(data.mercado || '');
           setAtivo(data.ativo || '');
 
+          // --- 2. SET MÉTRICAS PRÉ-CALCULADAS DO HTML (QUANDO EXISTIREM) ---
+          // Isso evita recálculos desnecessários
+          if (data.fatorLucro) setFatorLucro(data.fatorLucro);
+          if (data.taxaAcerto) setTaxaAcerto(data.taxaAcerto);
+          if (data.fatorRecuperacao) setFatorRecuperacao(data.fatorRecuperacao);
+          if (data.payoff) setPayoff(data.payoff);
+          if (data.avgGain) setAvgGain(data.avgGain);
+          if (data.avgLoss) setAvgLoss(data.avgLoss); // Já deve vir positivo
+
+          // --- 3. PROCESSAR DADOSCSV (ESSENCIAL PARA GRÁFICOS) ---
           if (data.dadosCSV) {
             const parsedData = Object.values(data.dadosCSV);
 
             let invalidDateCount = 0;
             const normalizados: CsvData[] = parsedData
               .map((row: any, index: number) => {
-                const dateStr = String(row['<DATE>'] || '');
+                const dateStr = String(row['<DATE>'] || '').trim();
 
+                // Ignora cabeçalhos ou linhas sem data válida
+                if (!dateStr || dateStr.toLowerCase().includes('horário') || dateStr.toLowerCase().includes('date')) {
+                  return null;
+                }
                 // ==========================================================
-                // >> ADAPTAÇÃO PARA O FORMATO DE DATA AAAA.MM.DD <<
-                // Substituímos todos os pontos por hífens.
-                const parsableDateStr = dateStr.replace(/\./g, '-');
+                // >> CORREÇÃO ROBUSTA DE DATA (v3) <<
+                // 1. Substitui todos os pontos ('.') por hífens ('-').
+                //    "2020.07.01 00:00" -> "2020-07-01 00:00"
+                // 2. Substitui o primeiro espaço (' ') por 'T'.
+                //    "2020-07-01 00:00" -> "2020-07-01T00:00"
+                //    "2025-01-01 00:00:00" -> "2025-01-01T00:00:00"
+                // Ambos os formatos viram um ISO 8601 válido.
+                const parsableDateStr = dateStr.replace(/\./g, '-').replace(' ', 'T');
                 // ==========================================================
 
-                const dateObj = new Date(parsableDateStr);
+                const dateObj = new Date(parsableDateStr); // ex: new Date("2025-01-01T00:00:00")
 
                 if (isNaN(dateObj.getTime())) {
-                  console.warn(`[AVISO] Linha ${index + 1} do CSV ignorada por data inválida: "${dateStr}"`);
+                  console.warn(`[AVISO] Linha ${index + 1} do CSV ignorada por data inválida: "${dateStr}" (convertida para: "${parsableDateStr}")`);
                   invalidDateCount++;
                   return null;
                 }
 
-                // Armazenamos a data já corrigida no nosso objeto.
-                // Todo o resto do código usará esta data válida.
                 return {
-                  DATE: parsableDateStr,
+                  DATE: parsableDateStr, // Armazena o formato corrigido "AAAA-MM-DDTHH:MM:SS"
                   BALANCE: parseFloat(String(row['<BALANCE>']).replace(',', '.') || '0'),
                   EQUITY: parseFloat(String(row['<EQUITY>']).replace(',', '.') || '0'),
                   'DEPOSIT LOAD': parseFloat(String(row['<DEPOSIT LOAD>']).replace(',', '.') || '0'),
@@ -579,53 +593,76 @@ function DashboardContent() {
 
             setCsvData(normalizados);
 
+            // --- 4. CÁLCULOS AINDA NECESSÁRIOS (BASEADOS NO CSV) ---
             if (normalizados.length > 0) {
+
+              // --- Define o Saldo Inicial ---
+              // 1º Prioridade: O 'depositoInicial' salvo do HTML
+              // 2º Prioridade: O primeiro 'EQUITY' do CSV
               setSaldoInicial(currentSaldo => {
+                if (data.depositoInicial && data.depositoInicial > 0) {
+                  return data.depositoInicial;
+                }
                 if (currentSaldo === 0 && normalizados[0]?.EQUITY > 0) {
                   return normalizados[0].EQUITY;
                 }
-                return currentSaldo;
+                return currentSaldo; // Mantém o que o usuário digitou, se nada for encontrado
               });
 
-              // O restante do código de cálculo de métricas agora funciona sem alterações,
-              // pois ele receberá as datas já corrigidas.
+              // --- Métricas que DEPENDEM do CSV (curva de capital, diário, mensal) ---
               const eqInicial = normalizados[0].EQUITY;
               const eqFinal = normalizados[normalizados.length - 1].EQUITY;
-              setLucroTotalEquity(eqFinal - eqInicial);
+              // Se 'saldoTotal' (lucro líquido) veio do HTML, usamos ele. Senão, calculamos.
+              setLucroTotalEquity(data.saldoTotal ? data.saldoTotal : eqFinal - eqInicial);
+
               const primeiraDataCsv = new Date(normalizados[0].DATE);
               const ultimaDataCsv = new Date(normalizados[normalizados.length - 1].DATE);
               const mesesNoPeriodo = Math.max(1, (ultimaDataCsv.getFullYear() - primeiraDataCsv.getFullYear()) * 12 + (ultimaDataCsv.getMonth() - primeiraDataCsv.getMonth()) + 1);
-              setMediaMensalEquity((eqFinal - eqInicial) / mesesNoPeriodo);
-              const dailyEquityChanges = normalizados.slice(1).map((row, i) => row.EQUITY - normalizados[i].EQUITY);
-              const gains = dailyEquityChanges.filter(change => change > 0);
-              const losses = dailyEquityChanges.filter(change => change < 0).map(l => Math.abs(l));
-              const totalGainValue = gains.reduce((sum, g) => sum + g, 0);
-              const totalLossValue = losses.reduce((sum, l) => sum + l, 0);
-              setFatorLucro(totalLossValue > 0 ? totalGainValue / totalLossValue : (totalGainValue > 0 ? Infinity : 0));
+              setMediaMensalEquity((data.saldoTotal ? data.saldoTotal : eqFinal - eqInicial) / mesesNoPeriodo);
+
+              // --- Métricas Diárias (Dias Pos/Neg, Maior Ganho/Perda Diária) ---
+              // Agrupa pelo último equity/balance do dia
               const equityPorData = new Map<string, number>();
               normalizados.forEach((row) => {
                 const dataFormatada = new Date(row.DATE).toISOString().split('T')[0];
                 equityPorData.set(dataFormatada, row.EQUITY);
               });
+
               const lucroDiarioArray: { data: string, valor: number }[] = [];
               const datasUnicasOrdenadas = Array.from(equityPorData.keys()).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
+              let maiorPerdaDiaria = { valor: 0, data: normalizados.length > 0 ? normalizados[0].DATE : '' };
+              let mGD = { valor: -Infinity, data: '' };
+
               for (let i = 1; i < datasUnicasOrdenadas.length; i++) {
                 const dataAtual = datasUnicasOrdenadas[i];
                 const dataAnterior = datasUnicasOrdenadas[i - 1];
                 const lucroDia = (equityPorData.get(dataAtual) ?? 0) - (equityPorData.get(dataAnterior) ?? 0);
                 lucroDiarioArray.push({ data: dataAtual, valor: lucroDia });
+
+                // Atualiza Maior Perda Diária
+                if (lucroDia < maiorPerdaDiaria.valor) {
+                  maiorPerdaDiaria = { valor: lucroDia, data: dataAtual };
+                }
+                // Atualiza Maior Ganho Diário
+                if (lucroDia > mGD.valor) {
+                  mGD = { valor: lucroDia, data: dataAtual };
+                }
               }
+
               const diasPos = lucroDiarioArray.filter(dia => dia.valor > 0).length;
               const diasNeg = lucroDiarioArray.filter(dia => dia.valor < 0).length;
               setDiasPositivos(diasPos);
               setDiasNegativos(diasNeg);
-              setTaxaAcerto((diasPos + diasNeg) > 0 ? (diasPos / (diasPos + diasNeg)) * 100 : 0);
-              let maiorDDValor = 0;
+              setMaiorGainDiario(mGD.valor > -Infinity && mGD.data !== '' ? mGD : null);
+
+              // --- Cálculo do Drawdown (híbrido) ---
+              let maiorDDValorCalculado = 0; // DD do Balance (calculado)
               let ddInicio = normalizados.length > 0 ? normalizados[0].DATE : '';
               let ddFim = normalizados.length > 0 ? normalizados[0].DATE : '';
               let picoEquity = normalizados.length > 0 ? normalizados[0].EQUITY : 0;
               let inicioPicoTemp = normalizados.length > 0 ? normalizados[0].DATE : '';
-              let maiorPerdaDiaria = { valor: 0, data: normalizados.length > 0 ? normalizados[0].DATE : '' };
+
               for (let i = 0; i < normalizados.length; i++) {
                 const atual = normalizados[i];
                 if (atual.EQUITY > picoEquity) {
@@ -633,57 +670,59 @@ function DashboardContent() {
                   inicioPicoTemp = atual.DATE;
                 }
                 const drawdownAtual = atual.EQUITY - picoEquity;
-                if (drawdownAtual < maiorDDValor) {
-                  maiorDDValor = drawdownAtual;
+                if (drawdownAtual < maiorDDValorCalculado) {
+                  maiorDDValorCalculado = drawdownAtual;
                   ddInicio = inicioPicoTemp;
                   ddFim = atual.DATE;
                 }
-                if (i > 0) {
-                  const perdaDoDia = atual.EQUITY - normalizados[i - 1].EQUITY;
-                  if (perdaDoDia < maiorPerdaDiaria.valor) {
-                    maiorPerdaDiaria = { valor: perdaDoDia, data: atual.DATE };
-                  }
-                }
               }
-              setDrawdownInfo({ valor: maiorDDValor, inicio: ddInicio, fim: ddFim, maiorLoss: maiorPerdaDiaria });
-              setFatorRecuperacao(maiorDDValor !== 0 ? (eqFinal - eqInicial) / Math.abs(maiorDDValor) : ((eqFinal - eqInicial) > 0 ? Infinity : 0));
-              const avgGainCalc = gains.length > 0 ? totalGainValue / gains.length : 0;
-              const avgLossCalc = losses.length > 0 ? totalLossValue / losses.length : 0;
-              setAvgGain(avgGainCalc);
-              setAvgLoss(avgLossCalc);
-              setPayoff(avgLossCalc > 0 ? avgGainCalc / avgLossCalc : (avgGainCalc > 0 ? Infinity : 0));
-              let mGD = { valor: -Infinity, data: '' };
-              lucroDiarioArray.forEach(dia => {
-                if (dia.valor > mGD.valor) {
-                  mGD = { valor: dia.valor, data: dia.data };
-                }
+
+              // Define o DrawdownInfo:
+              // Usa o 'valor' do HTML (Equity DD) se existir, senão usa o DD de Balance calculado
+              // Usa as 'datas' e 'maiorLoss' calculadas do CSV (Balance)
+              setDrawdownInfo({
+                valor: data.drawdown ? -Math.abs(data.drawdown) : maiorDDValorCalculado,
+                inicio: ddInicio,
+                fim: ddFim,
+                // Usa 'maiorLoss' do HTML se existir, senão o diário calculado
+                maiorLoss: data.maiorLoss ? { valor: data.maiorLoss, data: '' } : maiorPerdaDiaria
               });
-              setMaiorGainDiario(mGD.valor > -Infinity && mGD.data !== '' ? mGD : null);
+
+              // Se a taxaAcerto não veio do HTML (baseada em trades), calcula baseada em dias
+              if (!data.taxaAcerto) {
+                setTaxaAcerto((diasPos + diasNeg) > 0 ? (diasPos / (diasPos + diasNeg)) * 100 : 0);
+              }
+
+              // --- Métricas Anuais e Mensais (para gráficos) ---
               const lucroPorAnoMap: Record<string, number> = {};
               lucroDiarioArray.forEach(dia => {
                 const ano = new Date(dia.data).getFullYear().toString();
                 lucroPorAnoMap[ano] = (lucroPorAnoMap[ano] || 0) + dia.valor;
               });
               setLucroAno(Object.entries(lucroPorAnoMap).map(([ano, lucro]) => ({ ano, lucro: parseFloat(lucro.toFixed(2)) })));
+
               const lucroMensalMapDetalhado = new Map<string, { acumulado: number, dataObj: Date }>();
-              normalizados.forEach((row, i) => {
-                if (i === 0) return;
-                const data = new Date(row.DATE);
+
+              // Agrupa lucros por mês
+              lucroDiarioArray.forEach(dia => {
+                const data = new Date(dia.data);
                 const key = `${data.getFullYear()}-${data.getMonth()}`;
-                const prev = normalizados[i - 1];
-                const diferenca = row.EQUITY - prev.EQUITY;
+                const diferenca = dia.valor;
+
                 if (lucroMensalMapDetalhado.has(key)) {
                   lucroMensalMapDetalhado.get(key)!.acumulado += diferenca;
                 } else {
                   lucroMensalMapDetalhado.set(key, { acumulado: diferenca, dataObj: new Date(data.getFullYear(), data.getMonth(), 1) });
                 }
               });
+
               const lucrosMensais = Array.from(lucroMensalMapDetalhado.values());
               if (lucrosMensais.length > 0) {
                 const maiorMesCalc = lucrosMensais.reduce((max, mes) => mes.acumulado > max.acumulado ? mes : max);
                 setMaiorMes({ valor: maiorMesCalc.acumulado, data: maiorMesCalc.dataObj });
                 const piorMesCalc = lucrosMensais.reduce((min, mes) => mes.acumulado < min.acumulado ? mes : min);
                 setPiorMes({ valor: piorMesCalc.acumulado, data: piorMesCalc.dataObj });
+
                 const performanceData: { [year: number]: { [month: number]: number } } = {};
                 lucroMensalMapDetalhado.forEach((value, key) => {
                   const data = value.dataObj;
@@ -696,12 +735,15 @@ function DashboardContent() {
                 });
                 setMonthlyPerformanceData(performanceData);
               }
+
+              // --- Cálculo de Estagnação (baseado no CSV) ---
               let picoAnteriorEstagnacao = normalizados.length > 0 ? normalizados[0].EQUITY : 0;
               let diasEstagnado = 0;
               let inicioEstagnadoTemp = normalizados.length > 0 ? normalizados[0].DATE : '';
               let maiorEstagnacaoDias = 0;
               let dataInicioEstFinal = normalizados.length > 0 ? normalizados[0].DATE : '';
               let dataFimEstFinal = normalizados.length > 0 ? normalizados[0].DATE : '';
+
               for (let i = 1; i < normalizados.length; i++) {
                 const atual = normalizados[i];
                 if (atual.EQUITY > picoAnteriorEstagnacao) {
@@ -724,9 +766,7 @@ function DashboardContent() {
               if (diasEstagnado > maiorEstagnacaoDias) {
                 maiorEstagnacaoDias = diasEstagnado;
                 dataInicioEstFinal = inicioEstagnadoTemp;
-                if (normalizados.length > 0) {
-                  dataFimEstFinal = normalizados[normalizados.length - 1].DATE;
-                }
+                dataFimEstFinal = normalizados[normalizados.length - 1].DATE;
               }
               if (dataInicioEstFinal && dataFimEstFinal) {
                 setEstagnacaoInfo({
@@ -756,7 +796,7 @@ function DashboardContent() {
       setCarregandoDados(false);
       setCsvData([]);
     }
-  }, [user, roboNome]);
+  }, [user, roboNome]); // Dependência única, o resto é calculado em cadeia
 
   const profitChartData = useMemo(() => {
     // Retorna um array vazio se não houver dados para evitar erros
@@ -773,6 +813,7 @@ function DashboardContent() {
       profit: item.EQUITY - initialEquity, // Adiciona a nova chave 'profit'
     }));
   }, [csvData]); // Este hook será executado sempre que 'csvData' mudar
+
   const drawdownSeries = useMemo(() => {
     if (csvData.length === 0) return [];
     let pico = csvData[0].EQUITY;
@@ -780,38 +821,49 @@ function DashboardContent() {
       pico = Math.max(pico, row.EQUITY);
       return {
         DATE: row.DATE,
-        DD: row.EQUITY - pico,
+        DD: row.EQUITY - pico, // Este é o Drawdown de *Balance*
       };
     });
   }, [csvData]);
 
-  // ▼▼▼ COLE ESTES DOIS HOOKS USEMEMO NO SEU CÓDIGO ▼▼▼
+  // ▼▼▼ HOOKS USEMEMO PARA GRÁFICOS AVANÇADOS (NÃO PRECISAM MUDAR) ▼▼▼
 
   const advancedDistributionData = useMemo(() => {
     try {
       if (!csvData || csvData.length < 2) return [];
+
+      // Usa o 'dailyPerformanceData' já calculado que é { ano: { mes: { dia: valor } } }
       let results: number[] = [];
       const granularity = distributionGranularity;
+
+      const dailyResults: number[] = Object.values(dailyPerformanceData)
+        .flatMap(months => Object.values(months))
+        .flatMap(days => Object.values(days))
+        .filter(isFinite);
+
       if (granularity === 'diario') {
-        results = csvData.slice(1).map((row, i) => {
-          const prevEquity = csvData[i]?.EQUITY;
-          if (typeof prevEquity !== 'number') return NaN;
-          return row.EQUITY - prevEquity;
-        }).filter(isFinite);
+        results = dailyResults;
       } else {
         const resultsByPeriod = new Map<string, number>();
-        csvData.slice(1).forEach((row, i) => {
-          const date = new Date(row.DATE);
-          if (isNaN(date.getTime())) return;
-          const dailyResult = row.EQUITY - (csvData[i]?.EQUITY ?? 0);
-          if (!isFinite(dailyResult)) return;
-          const key = granularity === 'mensal'
-            ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-            : `${date.getFullYear()}`;
-          resultsByPeriod.set(key, (resultsByPeriod.get(key) || 0) + dailyResult);
+        Object.entries(dailyPerformanceData).forEach(([year, months]) => {
+          const yearKey = year;
+          Object.entries(months).forEach(([month, days]) => {
+            const monthKey = `${year}-${String(Number(month) + 1).padStart(2, '0')}`;
+
+            Object.entries(days).forEach(([day, value]) => {
+              if (!isFinite(value)) return;
+
+              if (granularity === 'mensal') {
+                resultsByPeriod.set(monthKey, (resultsByPeriod.get(monthKey) || 0) + value);
+              } else if (granularity === 'anual') {
+                resultsByPeriod.set(yearKey, (resultsByPeriod.get(yearKey) || 0) + value);
+              }
+            });
+          });
         });
         results = Array.from(resultsByPeriod.values());
       }
+
       if (results.length < 1) return [];
       const maxResult = Math.max(...results);
       const minResult = Math.min(...results);
@@ -850,21 +902,23 @@ function DashboardContent() {
       console.error("Erro ao calcular dados de distribuição:", error);
       return [];
     }
-  }, [csvData, distributionGranularity]);
+  }, [dailyPerformanceData, distributionGranularity]); // Depende do 'dailyPerformanceData'
 
   const scatterPlotData = useMemo(() => {
-    if (csvData.length < 2) return [];
-    return csvData.slice(1).map((row, i) => {
-      const prevEquity = csvData[i]?.EQUITY;
-      if (typeof prevEquity !== 'number') return null;
-      const date = new Date(row.DATE);
-      if (isNaN(date.getTime())) return null;
-      const timestamp = date.getTime();
-      const resultado = row.EQUITY - prevEquity;
-      if (!isFinite(resultado)) return null;
-      return { x: timestamp, y: resultado };
-    }).filter(Boolean);
-  }, [csvData]);
+    // Este gráfico plota o resultado de cada dia
+    const results: { x: number, y: number }[] = [];
+    Object.entries(dailyPerformanceData).forEach(([year, months]) => {
+      Object.entries(months).forEach(([month, days]) => {
+        Object.entries(days).forEach(([day, value]) => {
+          if (isFinite(value)) {
+            const timestamp = new Date(Number(year), Number(month), Number(day)).getTime();
+            results.push({ x: timestamp, y: value });
+          }
+        });
+      });
+    });
+    return results;
+  }, [dailyPerformanceData]); // Depende do 'dailyPerformanceData'
 
   const monteCarloData = useMemo(() => {
     if (csvData.length < 2) return [];
@@ -908,7 +962,18 @@ function DashboardContent() {
     return <div className="p-4 text-center text-gray-300">Analyzing URL...</div>;
   }
   if (carregandoDados) {
-    return <div className="p-4 text-center text-gray-300">Loading robot data...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+        <div className="p-6 rounded-lg shadow-lg bg-slate-800 text-center border border-slate-700">
+          <svg className="animate-spin h-10 w-10 text-purple-400 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-lg font-semibold text-white">Carregando dados do robô...</p>
+          <p className="text-sm text-gray-400">Por favor, aguarde um momento.</p>
+        </div>
+      </div>
+    );
   }
   // O restante do seu JSX
   return (
@@ -1014,6 +1079,7 @@ function DashboardContent() {
                         <NumericFormat value={fatorLucro} displayType="text" decimalScale={2} fixedDecimalScale />
                       </p>
                       <div className="flex justify-between text-sm text-gray-400">
+                        {/* 'taxaAcerto' agora vem do HTML (trades), não dias */}
                         <span className="text-gray-300">Hit Rate: <NumericFormat value={taxaAcerto} displayType="text" decimalScale={1} fixedDecimalScale suffix="%" /></span>
                         <span className="text-gray-300">Recovery Factor: <NumericFormat value={fatorRecuperacao} displayType="text" decimalScale={2} fixedDecimalScale /></span>
                       </div>
@@ -1023,13 +1089,16 @@ function DashboardContent() {
                     <CardHeader> <CardTitle className="text-white text-base font-medium">Payoff</CardTitle> </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold text-white">
+                        {/* 'payoff' agora vem do HTML */}
                         <NumericFormat value={payoff} displayType="text" decimalScale={2} fixedDecimalScale />
                       </p>
                       <p className="text-sm text-green-400">
-                        <NumericFormat value={avgGain} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale /> Average Positive Days
+                        {/* 'avgGain' agora vem do HTML (média por trade) */}
+                        <NumericFormat value={avgGain} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale /> Average Profitable Trade
                       </p>
                       <p className="text-sm text-red-500">
-                        <NumericFormat value={avgLoss} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale /> Average Negative Days
+                        {/* 'avgLoss' agora vem do HTML (média por trade) */}
+                        <NumericFormat value={avgLoss} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale /> Average Losing Trade
                       </p>
                     </CardContent>
                   </Card>
@@ -1050,7 +1119,7 @@ function DashboardContent() {
                               interval="preserveStartEnd"
                             />
                             <YAxis dataKey="profit"
-                              domain={[0, 'auto']} // Garante que o eixo Y comece em 0
+                              domain={['auto', 'auto']} // Deixamos 'auto' pois o lucro pode começar negativo
                               tickFormatter={(value) => `$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                               tick={{ fontSize: 12, fill: chartTextFill }}
                             />
@@ -1074,6 +1143,7 @@ function DashboardContent() {
                           </CardHeader>
                           <CardContent>
                             <p className="text-2xl font-bold text-red-500">
+                              {/* Valor (Equity DD) vem do HTML, datas (Balance DD) vêm do cálculo */}
                               <NumericFormat value={drawdownInfo.valor} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale />
                             </p>
                             <p className="text-xs text-gray-400">
@@ -1086,9 +1156,10 @@ function DashboardContent() {
                         <Card className="bg-slate-800 border-slate-700">
                           <CardHeader className="pb-2">
                             <CardTitle className="text-base font-medium text-white">Biggest Daily Loss</CardTitle>
-                            _all:         </CardHeader>
+                          </CardHeader>
                           <CardContent>
                             <p className="text-2xl font-bold text-red-500">
+                              {/* Este valor é calculado a partir do CSV (diário) */}
                               <NumericFormat value={drawdownInfo.maiorLoss.valor} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale />
                             </p>
                             <p className="text-xs text-gray-400">
@@ -1104,6 +1175,7 @@ function DashboardContent() {
                           </CardHeader>
                           <CardContent>
                             <p className="text-2xl font-bold text-green-500">
+                              {/* Este valor é calculado a partir do CSV (diário) */}
                               <NumericFormat value={maiorGainDiario.valor} displayType="text" thousandSeparator="." decimalSeparator="," prefix="$ " decimalScale={2} fixedDecimalScale />
                             </p>
                             <p className="text-xs text-gray-400">
@@ -1157,6 +1229,7 @@ function DashboardContent() {
                       </div>
                       <div className="space-y-2 pt-2">
                         <div className="flex justify-between text-sm font-medium">
+                          {/* Estes são baseados em dias, calculados do CSV */}
                           <span className="text-green-500">Positive Days: {diasPositivos}</span>
                           <span className="text-red-500">Negative Days: {diasNegativos}</span>
                         </div>
@@ -1223,7 +1296,7 @@ function DashboardContent() {
                           {estagnacaoInfo.dias} days
                         </p>
                         <p className="text-xs text-gray-400">
-                          {estagnacaoInfo.inicio ? new Date(estagnacaoInfo.inicio).toLocaleDateString('en-GB') : '-'} to  {estagnacaoInfo.fim ? new Date(estagnacaoInfo.fim).toLocaleDateString('en-GB') : '-'}
+                          {estagnacaoInfo.inicio ? new Date(estagnacaoInfo.inicio).toLocaleDateString('en-GB') : '-'} to  {estagnacaoInfo.fim ? new Date(estagnacaoInfo.fim).toLocaleDateString('en-GB') : '-'}
                         </p>
                       </CardContent>
                     </Card>
@@ -1379,7 +1452,7 @@ function DashboardContent() {
           )}
 
 
-          {/* ▼▼▼ SEÇÃO DE POP-UPS ATUALIZADA ▼▼▼ */}
+          {/* ▼▼▼ SEÇÃO DE POP-UPS (SEM ALTERAÇÕES) ▼▼▼ */}
 
           {/* Pop-up de Distribuição (Histograma Responsivo) */}
           {showDistribuicaoPopup && (

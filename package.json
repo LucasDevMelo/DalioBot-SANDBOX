@@ -8,8 +8,13 @@
     "start": "next start"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@heroicons/react": "^2.2.0",
     "@paddle/paddle-node-sdk": "^3.2.0",
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
+    "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^1.10.91",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/supabase-js": "^2.49.4",
@@ -25,6 +30,7 @@
     "firebase-admin": "^13.4.0",
     "formidable": "^3.5.3",
     "framer-motion": "^12.23.12",
+    "gsap": "^3.13.0",
     "lucide-react": "^0.525.0",
     "next": "latest",
     "papaparse": "^5.5.2",
@@ -39,7 +45,8 @@
     "recharts": "^2.15.3",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^3.3.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "three": "^0.181.0"
   },
   "devDependencies": {
     "@types/node": "22.14.1",
