@@ -310,7 +310,7 @@ function AdicionarEstrategiaContent() {
             // Save the data to Firebase using the extracted metrics
             await set(estrategiaRef, {
                 userId: user.uid, 
-                nomeRobo: nome, 
+                nome: nome, 
                 mercado, 
                 ativo, 
                 tipo, 
@@ -341,7 +341,7 @@ function AdicionarEstrategiaContent() {
             });
 
             alert('Strategy added successfully!');
-            router.push('/robos'); // Redirect after success
+            router.push('/robots'); // Redirect after success
             
         } catch (error: any) {
             console.error('Submit error:', error.message);
