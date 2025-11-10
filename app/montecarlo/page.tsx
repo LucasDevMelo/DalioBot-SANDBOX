@@ -11,7 +11,6 @@ import { motion } from 'framer-motion';
 
 // --- INTERFACES ---
 type Robo = {
-  id?: string;
   nome: string;
   mercado: string;
   ativo: string;
@@ -72,8 +71,7 @@ const RoboTableDesktop = ({ robos, onSimulate }: { robos: Robo[]; onSimulate: (r
         </thead>
         <tbody className="divide-y divide-slate-700">
           {robos.map((robo) => (
-            // agora usamos robo.id como key (fallback para nome caso não exista)
-            <tr key={robo.id ?? robo.nome} className="hover:bg-slate-700/40 transition-colors">
+            <tr key={robo.nome} className="hover:bg-slate-700/40 transition-colors">
               <td className="py-3 px-4 font-semibold text-purple-400">{robo.nome}</td>
               <td className="py-3 px-4 hidden lg:table-cell">{robo.mercado}</td>
               <td className="py-3 px-4 hidden lg:table-cell">{robo.ativo}</td>
@@ -147,17 +145,15 @@ export default function MontecarloPage() {
         const snapshot = await get(userRobosRef);
         if (snapshot.exists()) {
           const data = snapshot.val();
-          // Usar Object.entries para manter a key original do Firebase como "id"
-          const robosData: Robo[] = Object.entries(data).map(([key, roboObj]: any) => ({
-            id: key,
-            nome: roboObj.nome,
-            mercado: roboObj.mercado,
-            ativo: roboObj.ativo,
-            historicoInicio: roboObj.historicoInicio || 'N/A',
-            historicoFim: roboObj.historicoFim || 'N/A',
-            saldoTotal: roboObj.saldoTotal || 0,
-            fatorLucro: roboObj.fatorLucro || 0,
-            drawdown: roboObj.drawdown || 0,
+          const robosData: Robo[] = Object.values(data).map((robo: any) => ({
+            nome: robo.nome,
+            mercado: robo.mercado,
+            ativo: robo.ativo,
+            historicoInicio: robo.historicoInicio || 'N/A',
+            historicoFim: robo.historicoFim || 'N/A',
+            saldoTotal: robo.saldoTotal || 0,
+            fatorLucro: robo.fatorLucro || 0,
+            drawdown: robo.drawdown || 0,
           }));
           setRobos(robosData);
         } else {
@@ -259,8 +255,7 @@ export default function MontecarloPage() {
                   <RoboTableDesktop robos={robos} onSimulate={handleVerSimulacao} />
                   <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                     {robos.map((robo) => (
-                      // também aqui usamos a id como key
-                      <RoboCardMobile key={robo.id ?? robo.nome} robo={robo} onSimulate={handleVerSimulacao} />
+                      <RoboCardMobile key={robo.nome} robo={robo} onSimulate={handleVerSimulacao} />
                     ))}
                   </div>
                 </div>

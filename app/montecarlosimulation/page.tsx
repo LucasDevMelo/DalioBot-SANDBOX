@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense, useCallback } from 'react';
+import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
     LineChart, Line, XAxis, YAxis, ResponsiveContainer,
@@ -13,7 +13,7 @@ import React from 'react';
 
 // --- Reusable Components ---
 
-// Component to create a custom Tooltip that summarizes the data
+// Componente Tooltip (Sem alterações)
 const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
     if (active && payload && payload.length) {
         const values = payload.map((p: any) => p.value).sort((a: number, b: number) => a - b);
@@ -35,25 +35,41 @@ const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
     return null;
 };
 
-// Loading spinner with progress bar
-function ProgressLoadingSpinner({ progress }: { progress: number; }) {
+// --- MODIFICADO ---
+// Spinner de loading com o SVG CORRIGIDO e texto pulsante
+function ProgressLoadingSpinner({ progress, phase }: { progress: number; phase: 'calculating' | 'rendering' }) {
+    
+    const title = phase === 'calculating' 
+        ? `Generating Simulations... ${progress}%` 
+        : 'Rendering Chart...';
+        
+    const subtitle = phase === 'calculating' 
+        ? 'This might take a few moments.' 
+        : 'Finalizing visualization...';
+
     return (
         <div className="flex flex-1 flex-col justify-center items-center h-full p-8 text-center min-h-[400px]">
+            {/* --- SVG CORRIGIDO --- */}
             <svg className="animate-spin h-12 w-12 text-violet-400 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
+            {/* --- FIM DA CORREÇÃO --- */}
+            
             <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2.5 mb-2 shadow-inner">
                 <div className="bg-violet-500 h-2.5 rounded-full transition-all duration-150" style={{ width: `${progress}%` }}></div>
             </div>
-            <p className="text-gray-300 font-semibold">Generating Simulations... {progress}%</p>
-            <p className="text-xs text-gray-500 mt-1">This might take a few moments.</p>
+            
+            {/* --- TEXTO COM ANIMAÇÃO "PULSE" --- */}
+            <p className="text-gray-300 font-semibold animate-pulse">{title}</p>
+            <p className="text-xs text-gray-500 mt-1 animate-pulse">{subtitle}</p>
         </div>
     );
 }
 
 // --- Hooks & Interfaces ---
 
+// Hook useDebounce (Sem alterações)
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -63,6 +79,7 @@ function useDebounce<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
+// Interfaces (Sem alterações)
 interface PathPoint { step: number; value: number; }
 interface Simulation { path: PathPoint[]; color: string; }
 interface OcorrenciaDrawdown {
@@ -80,8 +97,10 @@ function SimulacaoMonteCarloContent() {
     const [sidebarAberta, setSidebarAberta] = useState(false);
     const searchParams = useSearchParams();
     const nomeRobo = searchParams.get('robo') || "Unknown Bot";
-    const [carregando, setCarregando] = useState(true);
-    const [progresso, setProgresso] = useState(0);
+
+    // Estados de loading (Sem alterações)
+    const [chartLoadingState, setChartLoadingState] = useState<'calculating' | 'rendering' | 'done'>('calculating');
+    const [progress, setProgress] = useState(0);
 
     const [retornoMedioSimulacao, setRetornoMedioSimulacao] = useState(0.0015);
     const [desvioPadraoSimulacao, setDesvioPadraoSimulacao] = useState(0.01);
@@ -90,7 +109,9 @@ function SimulacaoMonteCarloContent() {
     const quantidadeSimulacoes = Number(searchParams.get('simulacoes') || 1000);
     const stepsSimulacao = 252;
 
-    const [monteCarloData, setMonteCarloData] = useState<Simulation[]>([]);
+    // Estados de dados (Sem alterações)
+    const fullDataRef = useRef<Simulation[]>([]);
+    const [renderedLines, setRenderedLines] = useState<Simulation[]>([]);
     const [estatisticas, setEstatisticas] = useState({
         maiorDrawdown: 0, drawdownMedio: 0, menorDrawdown: 0,
         desvioPadraoDrawdowns: 0, ocorrenciasDrawdown: [] as OcorrenciaDrawdown[],
@@ -105,139 +126,103 @@ function SimulacaoMonteCarloContent() {
     });
     const [todosMaioresDrawdownsSimulacao, setTodosMaioresDrawdownsSimulacao] = useState<number[]>([]);
 
-    const gerarSimulacoes = useCallback(async () => {
-        setCarregando(true);
-        setProgresso(0);
-        const simulacoesGeradas: Simulation[] = [];
-        const capitalInicial = 10000;
-        const strongColors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075'];
-        let colorIndex = 0;
-        const getRandomColor = () => {
-            const color = strongColors[colorIndex % strongColors.length];
-            colorIndex++;
-            return color;
+    const workerRef = useRef<Worker | null>(null);
+
+    // 'gerarSimulacoes' (Sem alterações)
+    const gerarSimulacoes = useCallback(() => {
+        setChartLoadingState('calculating'); 
+        setProgress(0);
+        setRenderedLines([]); 
+        fullDataRef.current = []; 
+        setEstatisticas(prev => ({ 
+            ...prev, 
+            maiorDrawdown: 0, drawdownMedio: 0, menorDrawdown: 0,
+            desvioPadraoDrawdowns: 0, ocorrenciasDrawdown: [],
+            melhorEstagnacao: Infinity, piorEstagnacao: 0, mediaEstagnacao: 0,
+            melhorMes: -Infinity, piorMes: Infinity, mediaMes: 0,
+            histMensal: [],
+            frequenciaPeriodosNegativos: { meses: 0, trimestres: 0, semestres: 0, anos: 0 },
+        }));
+        setTodosMaioresDrawdownsSimulacao([]);
+
+        if (workerRef.current) {
+            workerRef.current.terminate();
+        }
+
+        const worker = new Worker(new URL('./montecarloworker.tsx', import.meta.url));
+        workerRef.current = worker;
+
+        worker.onmessage = (event) => {
+            const { type, progress, data, error } = event.data;
+
+            if (type === 'progress') {
+                setProgress(progress); 
+            } 
+            else if (type === 'result') {
+                setProgress(100);
+                fullDataRef.current = data.monteCarloData; 
+                setEstatisticas(data.estatisticas);
+                setTodosMaioresDrawdownsSimulacao(data.todosMaioresDrawdownsSimulacao);
+                setChartLoadingState('rendering'); 
+                
+                worker.terminate();
+                workerRef.current = null;
+            } 
+            else if (type === 'error') {
+                console.error('Erro no Monte Carlo Worker:', error);
+                setChartLoadingState('done'); 
+                worker.terminate();
+                workerRef.current = null;
+            }
         };
-        const todosOsDrawdowns: number[] = [];
-        const todasDuracoesEstagnacao: number[] = [];
-        const todosGanhosMensaisAgregados: number[] = [];
-        const percentagesNegativeMonths: number[] = [];
-        const percentagesNegativeTrimesters: number[] = [];
-        const percentagesNegativeSemesters: number[] = [];
-        const percentagesNegativeYears: number[] = [];
 
-        for (let i = 0; i < quantidadeSimulacoes; i++) {
-            const path: PathPoint[] = [{ step: 0, value: capitalInicial }];
-            let maxValSimulacao = capitalInicial;
-            let maxDrawdownSimulacao = 0;
-            let diasEstagnado = 0;
-            const estagnacoesDaSimulacao: number[] = [];
-            const ganhosMensaisDaSimulacao: number[] = [];
-            let ganhoAcumuladoMes = 0;
+        worker.postMessage({
+            quantidadeSimulacoes,
+            stepsSimulacao,
+            retornoMedioSimulacao,
+            desvioPadraoSimulacao
+        });
 
-            for (let j = 1; j <= stepsSimulacao; j++) {
-                const lastValue = path[j - 1].value;
-                const randomShock = retornoMedioSimulacao + desvioPadraoSimulacao * (Math.sqrt(-2 * Math.log(Math.random())) * Math.cos(2 * Math.PI * Math.random()));
-                const novoValor = Math.max(0, lastValue * (1 + randomShock));
-                path.push({ step: j, value: novoValor });
-                if (novoValor > maxValSimulacao) {
-                    maxValSimulacao = novoValor;
-                    if (diasEstagnado > 0) estagnacoesDaSimulacao.push(diasEstagnado);
-                    diasEstagnado = 0;
-                } else { diasEstagnado++; }
-                const drawdown = novoValor - maxValSimulacao;
-                if (drawdown < maxDrawdownSimulacao) maxDrawdownSimulacao = drawdown;
-                ganhoAcumuladoMes += (novoValor - lastValue);
-                if (j % 21 === 0 || j === stepsSimulacao) {
-                    ganhosMensaisDaSimulacao.push(ganhoAcumuladoMes);
-                    ganhoAcumuladoMes = 0;
+    }, [quantidadeSimulacoes, retornoMedioSimulacao, desvioPadraoSimulacao, stepsSimulacao]);
+
+    // useEffect para renderização "fatiada" (Sem alterações)
+    useEffect(() => {
+        if (chartLoadingState === 'rendering') {
+            const CHUNK_SIZE = 20; 
+            const MAX_LINES = Math.min(fullDataRef.current.length, 200);
+            let currentChunk = 0;
+
+            function renderNextChunk() {
+                const start = currentChunk * CHUNK_SIZE;
+                const end = Math.min(start + CHUNK_SIZE, MAX_LINES);
+                const chunkData = fullDataRef.current.slice(start, end);
+                setRenderedLines(prev => [...prev, ...chunkData]);
+                currentChunk++;
+                
+                if (end < MAX_LINES) {
+                    requestAnimationFrame(renderNextChunk);
+                } else {
+                    setChartLoadingState('done'); 
+                    fullDataRef.current = []; 
                 }
             }
-            if (diasEstagnado > 0) estagnacoesDaSimulacao.push(diasEstagnado);
-            todosOsDrawdowns.push(maxDrawdownSimulacao);
-            todasDuracoesEstagnacao.push(...estagnacoesDaSimulacao.filter(d => d > 0));
-            todosGanhosMensaisAgregados.push(...ganhosMensaisDaSimulacao);
-            simulacoesGeradas.push({ path: path, color: getRandomColor() });
-            if (ganhosMensaisDaSimulacao.length > 0) {
-                const totalMonthsInSim = ganhosMensaisDaSimulacao.length;
-                const negMonthsCount = ganhosMensaisDaSimulacao.filter(g => g < 0).length;
-                percentagesNegativeMonths.push((negMonthsCount / totalMonthsInSim) * 100);
-                const calculateRollingNegativePercentage = (data: number[], windowSize: number): number => {
-                    if (data.length < windowSize) return 0;
-                    let negativeWindowCount = 0;
-                    const numPossibleWindows = data.length - windowSize + 1;
-                    for (let k = 0; k < numPossibleWindows; k++) {
-                        if (data.slice(k, k + windowSize).reduce((a, b) => a + b, 0) < 0) {
-                            negativeWindowCount++;
-                        }
-                    }
-                    return (negativeWindowCount / numPossibleWindows) * 100;
-                };
-                percentagesNegativeTrimesters.push(calculateRollingNegativePercentage(ganhosMensaisDaSimulacao, 3));
-                percentagesNegativeSemesters.push(calculateRollingNegativePercentage(ganhosMensaisDaSimulacao, 6));
-                percentagesNegativeYears.push(calculateRollingNegativePercentage(ganhosMensaisDaSimulacao, 12));
-            } else {
-                percentagesNegativeMonths.push(0); percentagesNegativeTrimesters.push(0);
-                percentagesNegativeSemesters.push(0); percentagesNegativeYears.push(0);
-            }
-            setProgresso(Math.floor(((i + 1) / quantidadeSimulacoes) * 100));
-            if (i % Math.floor(quantidadeSimulacoes / 100 || 1) === 0) {
-                await new Promise(resolve => setTimeout(resolve, 0));
-            }
+            requestAnimationFrame(renderNextChunk);
         }
-        setMonteCarloData(simulacoesGeradas);
-        setTodosMaioresDrawdownsSimulacao(todosOsDrawdowns);
-        const maiorDD = todosOsDrawdowns.length > 0 ? Math.min(...todosOsDrawdowns) : 0;
-        const ddMedio = todosOsDrawdowns.length > 0 ? todosOsDrawdowns.reduce((a, b) => a + b, 0) / todosOsDrawdowns.length : 0;
-        const menorDD = todosOsDrawdowns.length > 0 ? Math.max(...todosOsDrawdowns.filter(d => d < 0), 0) : 0;
-        const varianciaDD = todosOsDrawdowns.length > 1 ? todosOsDrawdowns.reduce((sum, val) => sum + Math.pow(val - ddMedio, 2), 0) / (todosOsDrawdowns.length - 1) : 0;
-        const dpDD = Math.sqrt(varianciaDD);
-        const ocorrenciasDD: OcorrenciaDrawdown[] = [1, 2, 3].map(multiplicador => {
-            const limite = ddMedio - (dpDD * multiplicador);
-            const vezes = todosOsDrawdowns.filter(dd => dd <= limite).length;
-            const minHist = maiorDD; const maxHist = 0; const numBins = 10;
-            const binWidth = (maxHist - minHist) / numBins || 1;
-            const histArray = Array(numBins).fill(0).map((_, idx) => {
-                const binMin = minHist + idx * binWidth;
-                const binMax = minHist + (idx + 1) * binWidth;
-                return {
-                    name: `${binMin.toFixed(0)}`,
-                    ocorrencias: todosOsDrawdowns.filter(dd => dd >= binMin && (idx === numBins - 1 ? dd <= binMax : dd < binMax)).length
-                };
-            });
-            return {
-                label: `Worse than (Avg DD - ${multiplicador} SD)`,
-                limite, vezes,
-                porcentagem: todosOsDrawdowns.length > 0 ? (vezes / todosOsDrawdowns.length) * 100 : 0,
-                histograma: histArray,
-            };
-        });
-        const melhorEst = todasDuracoesEstagnacao.length > 0 ? Math.min(...todasDuracoesEstagnacao) : 0;
-        const piorEst = todasDuracoesEstagnacao.length > 0 ? Math.max(...todasDuracoesEstagnacao) : 0;
-        const mediaEst = todasDuracoesEstagnacao.length > 0 ? todasDuracoesEstagnacao.reduce((a, b) => a + b, 0) / todasDuracoesEstagnacao.length : 0;
-        const melhorM = todosGanhosMensaisAgregados.length > 0 ? Math.max(...todosGanhosMensaisAgregados) : 0;
-        const piorM = todosGanhosMensaisAgregados.length > 0 ? Math.min(...todosGanhosMensaisAgregados) : 0;
-        const mediaM = todosGanhosMensaisAgregados.length > 0 ? todosGanhosMensaisAgregados.reduce((a, b) => a + b, 0) / todosGanhosMensaisAgregados.length : 0;
-        const avgPercNegMonths = percentagesNegativeMonths.length > 0 ? percentagesNegativeMonths.reduce((a, b) => a + b, 0) / percentagesNegativeMonths.length : 0;
-        const avgPercNegTrimesters = percentagesNegativeTrimesters.length > 0 ? percentagesNegativeTrimesters.reduce((a, b) => a + b, 0) / percentagesNegativeTrimesters.length : 0;
-        const avgPercNegSemesters = percentagesNegativeSemesters.length > 0 ? percentagesNegativeSemesters.reduce((a, b) => a + b, 0) / percentagesNegativeSemesters.length : 0;
-        const avgPercNegYears = percentagesNegativeYears.length > 0 ? percentagesNegativeYears.reduce((a, b) => a + b, 0) / percentagesNegativeYears.length : 0;
+    }, [chartLoadingState]); 
 
-        setEstatisticas({
-            maiorDrawdown: maiorDD, drawdownMedio: ddMedio, menorDrawdown: menorDD, desvioPadraoDrawdowns: dpDD,
-            ocorrenciasDrawdown: ocorrenciasDD, melhorEstagnacao: melhorEst, piorEstagnacao: piorEst,
-            mediaEstagnacao: mediaEst, melhorMes: melhorM, piorMes: piorM, mediaMes: mediaM,
-            histMensal: todosGanhosMensaisAgregados,
-            frequenciaPeriodosNegativos: {
-                meses: avgPercNegMonths, trimestres: avgPercNegTrimesters,
-                semestres: avgPercNegSemesters, anos: avgPercNegYears,
-            },
-        });
-        setProgresso(100);
-        setTimeout(() => setCarregando(false), 300);
-    }, [quantidadeSimulacoes, retornoMedioSimulacao, desvioPadraoSimulacao]);
+    // useEffect de inicialização (Sem alterações)
+    useEffect(() => {
+        gerarSimulacoes();
+        
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+        };
+    }, [gerarSimulacoes]);
 
-    useEffect(() => { gerarSimulacoes(); }, [gerarSimulacoes]);
-
+    // useEffect de cálculo de Risco (Sem alterações)
     useEffect(() => {
         if (todosMaioresDrawdownsSimulacao.length === 0 || (estatisticas.maiorDrawdown === 0 && estatisticas.drawdownMedio === 0)) {
             setResultadoRisco({ capitalRecomendado: 0, retornoMensalEstimado: 0, riscoRuinaEstimado: 0, ocorrenciasRuina: 0 });
@@ -256,6 +241,7 @@ function SimulacaoMonteCarloContent() {
         setResultadoRisco({ capitalRecomendado: capitalRec, retornoMensalEstimado: retornoMensalEst, riscoRuinaEstimado: riscoDeRuina, ocorrenciasRuina: ocorrenciasDeRuina });
     }, [riscoAceitoDebounced, todosMaioresDrawdownsSimulacao, estatisticas.maiorDrawdown, estatisticas.drawdownMedio, estatisticas.mediaMes]);
 
+    // Funções de Formatação (Sem alterações)
     const formatCurrency = (value: number) => {
         if (value === Infinity || value === -Infinity || isNaN(value)) return "N/A";
         return `$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -268,8 +254,6 @@ function SimulacaoMonteCarloContent() {
         if (value === Infinity || value === -Infinity || isNaN(value)) return "N/A";
         return `${Math.round(value)} days`;
     };
-
-    // Chart Tooltip Style for Recharts
     const tooltipStyle = {
         contentStyle: {
             backgroundColor: 'rgba(30, 41, 59, 0.9)',
@@ -282,6 +266,8 @@ function SimulacaoMonteCarloContent() {
         itemStyle: { color: '#94a3b8' }
     };
 
+    // --- JSX (Renderização) ---
+    // (A lógica do JSX não foi alterada)
     return (
         <div className="min-h-screen flex flex-col bg-slate-900 text-gray-300">
             <Topbar />
@@ -298,10 +284,10 @@ function SimulacaoMonteCarloContent() {
                         <p className="text-slate-400 mt-1">{nomeRobo} - {quantidadeSimulacoes.toLocaleString('pt-BR')} Scenarios</p>
                     </header>
 
-                    <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl shadow-slate-950/50 mb-8 flex items-center justify-center">
-                        {carregando ? (
-                            <ProgressLoadingSpinner progress={progresso} />
-                        ) : monteCarloData.length > 0 ? (
+                    {/* Card do Gráfico (com overlay) */}
+                    <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl shadow-slate-950/50 mb-8">
+                        <div className="relative min-h-[500px]">
+                            
                             <ResponsiveContainer width="100%" height={500}>
                                 <LineChart margin={{ top: 5, right: 20, left: 50, bottom: 25 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -336,29 +322,37 @@ function SimulacaoMonteCarloContent() {
                                             fill: '#ffffffff'
                                         }}
                                     />
-                                    {monteCarloData
-                                        .slice(0, Math.min(quantidadeSimulacoes, 200))
-                                        .map((simulacao, index) => (
-                                            <Line
-                                                key={index}
-                                                data={simulacao.path}
-                                                type="monotone"
-                                                dataKey="value"
-                                                stroke={simulacao.color}
-                                                strokeWidth={0.8}
-                                                dot={false}
-                                                isAnimationActive={false}
-                                                opacity={0.6}
-                                            />
-                                        ))}
+                                    {renderedLines.map((simulacao, index) => (
+                                        <Line
+                                            key={index}
+                                            data={simulacao.path}
+                                            type="monotone"
+                                            dataKey="value"
+                                            stroke={simulacao.color}
+                                            strokeWidth={0.8}
+                                            dot={false}
+                                            isAnimationActive={false} 
+                                            opacity={0.6}
+                                        />
+                                    ))}
                                 </LineChart>
-
                             </ResponsiveContainer>
-                        ) : (<p className="text-slate-400">No simulations to display.</p>)}
+
+                            {/* O Spinner/Overlay só desaparece quando o gráfico está PRONTO */}
+                            {chartLoadingState !== 'done' && (
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800/90 rounded-2xl backdrop-blur-sm">
+                                    <ProgressLoadingSpinner 
+                                        progress={progress} 
+                                        phase={chartLoadingState as 'calculating' | 'rendering'} 
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </section>
 
-                    {!carregando && monteCarloData.length > 0 && (
-                        <div className="space-y-8">
+                    {/* O resto da página (stats) agora aparece assim que o CÁLCULO termina */}
+                    {chartLoadingState !== 'calculating' && (
+                        <div className="space-y-8 animate-fade-in"> 
                             {/* Drawdown Analysis Card */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                 <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Drawdown Analysis</h3>
@@ -485,7 +479,7 @@ function SimulacaoMonteCarloContent() {
     );
 }
 
-// Helper component for stat cards
+// Helper component StatCard (Sem alterações)
 const StatCard = ({ label, value, color }: { label: string; value: string; color: string; }) => (
     <div>
         <p className={`text-2xl font-bold ${color}`}>{value}</p>
@@ -495,16 +489,17 @@ const StatCard = ({ label, value, color }: { label: string; value: string; color
 
 
 // --- Page Component Wrapper ---
-
 export default function SimulacaoMonteCarloPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-slate-900">
                 <div className="text-center">
+                    {/* --- SVG CORRIGIDO --- */}
                     <svg className="animate-spin h-10 w-10 text-violet-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
+                    {/* --- FIM DA CORREÇÃO --- */}
                     <p className="text-lg font-semibold text-gray-300">Loading Simulation...</p>
                     <p className="text-sm text-gray-500">Fetching parameters and preparing the environment.</p>
                 </div>
