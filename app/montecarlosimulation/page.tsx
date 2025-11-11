@@ -35,42 +35,66 @@ const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
     return null;
 };
 
-// --- MODIFICADO ---
-// Spinner de loading com a contagem de renderização CORRIGIDA para equivalência visual.
-function ProgressLoadingSpinner({ 
-    progress, 
-    phase, 
-    currentRenderedLines = 0, // X_real
-    totalSimulations // Y
-}: { 
-    progress: number; 
+// --- MODIFICADO: ProgressLoadingSpinner ajustado para saltos de 25% na barra de progresso ---
+function ProgressLoadingSpinner({
+    calculatingProgress,
+    phase,
+    currentRenderedLines = 0,
+    totalSimulations
+}: {
+    calculatingProgress: number;
     phase: 'calculating' | 'rendering';
-    currentRenderedLines?: number; 
-    totalSimulations: number; 
+    currentRenderedLines?: number;
+    totalSimulations: number;
 }) {
-    
+
     const MAX_RENDER_LIMIT = 200; // O limite real do gráfico
-    
-    const title = phase === 'calculating' 
-        ? `Generating Simulations... ${progress}%` 
+
+    const title = phase === 'calculating'
+        ? `Generating Simulations... ${calculatingProgress}%`
         : 'Rendering Chart...';
-        
-    let subtitle = 'Finalizing visualization...'; 
+
+    let subtitle = 'Finalizing visualization...';
+    let visualCount = 0;
+
+    // --- Lógica do Progresso da Barra ---
+    let actualBarPercentage = 0;
 
     if (phase === 'calculating') {
         subtitle = 'This might take a few moments.';
+        actualBarPercentage = calculatingProgress; // Usa o progresso contínuo do worker
     } else if (phase === 'rendering' && totalSimulations > 0) {
-        
+
         // 1. Calcula o progresso visual equivalente (X_visual)
         const simulationsRenderedEquivalent = Math.round(
             (currentRenderedLines / MAX_RENDER_LIMIT) * totalSimulations
         );
-        
+
         // 2. Garante que o contador nunca exceda o total (Y)
-        const visualCount = Math.min(simulationsRenderedEquivalent, totalSimulations);
-        
-        // 3. Constrói a mensagem com a contagem visual
-        subtitle = `Rendering: ${visualCount.toLocaleString('pt-BR')}/${totalSimulations.toLocaleString('pt-BR')} lines.`; 
+        visualCount = Math.min(simulationsRenderedEquivalent, totalSimulations);
+
+        // 3. Calcula a porcentagem total de progresso na renderização (contínua)
+        const continuousProgressPercentage = (visualCount / totalSimulations) * 100;
+
+        // 4. Mapeia a porcentagem contínua para saltos discretos (25%, 50%, 75%, 100%)
+        let discreetBarPercentage = 0;
+        if (continuousProgressPercentage >= 90) {
+            discreetBarPercentage = 100;
+        } else if (continuousProgressPercentage >= 65) {
+            discreetBarPercentage = 75;
+        } else if (continuousProgressPercentage >= 40) {
+            discreetBarPercentage = 50;
+        } else if (continuousProgressPercentage >= 15) {
+            discreetBarPercentage = 25;
+        } else {
+            // Mantém 0% até atingir o primeiro limiar
+            discreetBarPercentage = 0;
+        }
+
+        actualBarPercentage = discreetBarPercentage; // A barra agora usa o valor discreto
+
+        // 5. Constrói a mensagem com a contagem visual
+        subtitle = `Rendering: ${visualCount.toLocaleString('pt-BR')}/${totalSimulations.toLocaleString('pt-BR')} lines loaded.`;
     }
 
     return (
@@ -81,11 +105,12 @@ function ProgressLoadingSpinner({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
             {/* --- FIM DA CORREÇÃO --- */}
-            
+
             <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2.5 mb-2 shadow-inner">
-                <div className="bg-violet-500 h-2.5 rounded-full transition-all duration-150" style={{ width: `${progress}%` }}></div>
+                {/* APLICANDO A PORCENTAGEM DISCRETA CALCULADA */}
+                <div className="bg-violet-500 h-2.5 rounded-full transition-all duration-150" style={{ width: `${actualBarPercentage}%` }}></div>
             </div>
-            
+
             {/* --- TEXTO COM ANIMAÇÃO "PULSE" --- */}
             <p className="text-gray-300 font-semibold animate-pulse">{title}</p>
             {/* NOVO: Exibe o subtítulo dinâmico */}
@@ -185,17 +210,17 @@ const RiskSlider: React.FC<RiskSliderProps> = React.memo(({ initialRisco, onRisc
             <label htmlFor="riscoRange" className="block text-sm font-medium text-gray-300 mb-2">
                 Your Accepted Risk Level: <span className="font-bold text-violet-300">{formatPercentage(localRisco * 100, 0)}</span>
             </label>
-            <input 
-                id="riscoRange" 
-                type="range" 
-                min={0.05} 
-                max={1} 
-                step={0.01} 
-                value={localRisco} 
+            <input
+                id="riscoRange"
+                type="range"
+                min={0.05}
+                max={1}
+                step={0.01}
+                value={localRisco}
                 onChange={handleRiscoChange}
-                onMouseUp={handleRiscoRelease} 
+                onMouseUp={handleRiscoRelease}
                 onTouchEnd={handleRiscoRelease}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500" 
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
             />
         </div>
     );
@@ -213,16 +238,16 @@ function SimulacaoMonteCarloContent() {
 
     // Estados de loading (Sem alterações)
     const [chartLoadingState, setChartLoadingState] = useState<'calculating' | 'rendering' | 'done'>('calculating');
-    const [progress, setProgress] = useState(0);
+    const [calculatingProgress, setCalculatingProgress] = useState(0);
 
     const [retornoMedioSimulacao, setRetornoMedioSimulacao] = useState(0.0015);
     const [desvioPadraoSimulacao, setDesvioPadraoSimulacao] = useState(0.01);
-    
+
     // ESTADO NOVO: Indica que o cálculo de risco está em andamento (para o loading)
     const [isRiskCalculating, setIsRiskCalculating] = useState(false);
-    
+
     const [riscoAceito, setRiscoAceito] = useState(0.20);
-    
+
     const quantidadeSimulacoes = Number(searchParams.get('simulacoes') || 1000);
     const stepsSimulacao = 252;
 
@@ -244,7 +269,7 @@ function SimulacaoMonteCarloContent() {
     const [todosMaioresDrawdownsSimulacao, setTodosMaioresDrawdownsSimulacao] = useState<number[]>([]);
 
     const workerRef = useRef<Worker | null>(null);
-    const riskWorkerRef = useRef<Worker | null>(null); 
+    const riskWorkerRef = useRef<Worker | null>(null);
 
     const terminateRiskWorker = useCallback(() => {
         if (riskWorkerRef.current) {
@@ -261,18 +286,18 @@ function SimulacaoMonteCarloContent() {
     }, []);
 
 
-    // 'gerarSimulacoes' (Modificado para usar startRiskCalculation)
+    // 'gerarSimulacoes' 
     const gerarSimulacoes = useCallback(() => {
-        setChartLoadingState('calculating'); 
-        setProgress(0);
-        setRenderedLines([]); 
-        fullDataRef.current = []; 
+        setChartLoadingState('calculating');
+        setCalculatingProgress(0); // Usa calculatingProgress
+        setRenderedLines([]);
+        fullDataRef.current = [];
         setIsRiskCalculating(true); // Inicia o loading de risco também na simulação inicial
-        
+
         terminateRiskWorker(); // Encerra worker de risco anterior
-        
-        setEstatisticas(prev => ({ 
-            ...prev, 
+
+        setEstatisticas(prev => ({
+            ...prev,
             maiorDrawdown: 0, drawdownMedio: 0, menorDrawdown: 0,
             desvioPadraoDrawdowns: 0, ocorrenciasDrawdown: [],
             melhorEstagnacao: Infinity, piorEstagnacao: 0, mediaEstagnacao: 0,
@@ -293,23 +318,21 @@ function SimulacaoMonteCarloContent() {
             const { type, progress, data, error } = event.data;
 
             if (type === 'progress') {
-                setProgress(progress); 
-            } 
+                setCalculatingProgress(progress); // Usa calculatingProgress
+            }
             else if (type === 'result') {
-                setProgress(100);
-                fullDataRef.current = data.monteCarloData; 
+                setCalculatingProgress(100); // Usa calculatingProgress
+                fullDataRef.current = data.monteCarloData;
                 setEstatisticas(data.estatisticas);
                 setTodosMaioresDrawdownsSimulacao(data.todosMaioresDrawdownsSimulacao);
-                setChartLoadingState('rendering'); 
-                
-                // O cálculo de risco será disparado pelo useEffect que monitora todosMaioresDrawdownsSimulacao
-                
+                setChartLoadingState('rendering');
+
                 worker.terminate();
                 workerRef.current = null;
-            } 
+            }
             else if (type === 'error') {
                 console.error('Erro no Monte Carlo Worker:', error);
-                setChartLoadingState('done'); 
+                setChartLoadingState('done');
                 setIsRiskCalculating(false);
                 worker.terminate();
                 workerRef.current = null;
@@ -328,9 +351,9 @@ function SimulacaoMonteCarloContent() {
     // useEffect para renderização "fatiada" (Sem alterações)
     useEffect(() => {
         if (chartLoadingState === 'rendering') {
-            const CHUNK_SIZE = 20; 
+            const CHUNK_SIZE = 20;
             const MAX_LINES = Math.min(fullDataRef.current.length, 200);
-            
+
             let currentChunk = 0;
 
             function renderNextChunk() {
@@ -339,22 +362,22 @@ function SimulacaoMonteCarloContent() {
                 const chunkData = fullDataRef.current.slice(start, end);
                 setRenderedLines(prev => [...prev, ...chunkData]);
                 currentChunk++;
-                
+
                 if (end < MAX_LINES) {
                     requestAnimationFrame(renderNextChunk);
                 } else {
-                    setChartLoadingState('done'); 
-                    fullDataRef.current = []; 
+                    setChartLoadingState('done');
+                    fullDataRef.current = [];
                 }
             }
             requestAnimationFrame(renderNextChunk);
         }
-    }, [chartLoadingState]); 
+    }, [chartLoadingState]);
 
     // useEffect de inicialização (Sem alterações)
     useEffect(() => {
         gerarSimulacoes();
-        
+
         return () => {
             if (workerRef.current) {
                 workerRef.current.terminate();
@@ -366,7 +389,7 @@ function SimulacaoMonteCarloContent() {
 
     // CORRIGIDO: useEffect de cálculo de Risco (usa setTimeout para assincronia)
     useEffect(() => {
-        terminateRiskWorker(); 
+        terminateRiskWorker();
 
         if (todosMaioresDrawdownsSimulacao.length === 0 || estatisticas.maiorDrawdown === 0) {
             setResultadoRisco({ capitalRecomendado: 0, retornoMensalEstimado: 0, riscoRuinaEstimado: 0, ocorrenciasRuina: 0 });
@@ -376,7 +399,7 @@ function SimulacaoMonteCarloContent() {
 
         // Ação assíncrona: garantir que o spinner seja pintado antes de iniciar o Worker.
         const timer = setTimeout(() => {
-            
+
             // 2. Cria e inicia o Worker de Risco
             const worker = new Worker(new URL('./riskcalculatorworker.tsx', import.meta.url));
             riskWorkerRef.current = worker;
@@ -398,7 +421,7 @@ function SimulacaoMonteCarloContent() {
                 drawdownMedio: estatisticas.drawdownMedio,
                 mediaMes: estatisticas.mediaMes
             });
-        }, 0); 
+        }, 0);
 
         return () => {
             // Cleanup: encerra o timer e o worker se a dependência mudar
@@ -452,7 +475,7 @@ function SimulacaoMonteCarloContent() {
                     {/* Card do Gráfico (com overlay) */}
                     <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl shadow-slate-950/50 mb-8">
                         <div className="relative min-h-[500px]">
-                            
+
                             <ResponsiveContainer width="100%" height={500}>
                                 <LineChart margin={{ top: 5, right: 20, left: 50, bottom: 25 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -496,7 +519,7 @@ function SimulacaoMonteCarloContent() {
                                             stroke={simulacao.color}
                                             strokeWidth={0.8}
                                             dot={false}
-                                            isAnimationActive={false} 
+                                            isAnimationActive={false}
                                             opacity={0.6}
                                         />
                                     ))}
@@ -506,12 +529,12 @@ function SimulacaoMonteCarloContent() {
                             {/* O Spinner/Overlay só desaparece quando o gráfico está PRONTO */}
                             {chartLoadingState !== 'done' && (
                                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800/90 rounded-2xl backdrop-blur-sm">
-                                    <ProgressLoadingSpinner 
-                                        progress={progress} 
+                                    <ProgressLoadingSpinner
+                                        calculatingProgress={calculatingProgress}
                                         phase={chartLoadingState as 'calculating' | 'rendering'}
                                         // PASSANDO: renderedLines.length / quantidadeSimulacoes
                                         currentRenderedLines={renderedLines.length}
-                                        totalSimulations={quantidadeSimulacoes} 
+                                        totalSimulations={quantidadeSimulacoes}
                                     />
                                 </div>
                             )}
@@ -520,7 +543,7 @@ function SimulacaoMonteCarloContent() {
 
                     {/* O resto da página (stats) agora aparece assim que o CÁLCULO termina */}
                     {chartLoadingState !== 'calculating' && (
-                        <div className="space-y-8 animate-fade-in"> 
+                        <div className="space-y-8 animate-fade-in">
                             {/* Drawdown Analysis Card */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                 <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Drawdown Analysis</h3>
@@ -613,7 +636,7 @@ function SimulacaoMonteCarloContent() {
                             {/* Risk Management Card */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                 <h3 className="text-lg font-semibold text-violet-400 mb-5 text-center border-b border-slate-700 pb-3">Suggested Risk Management</h3>
-                                
+
                                 {/* Uso do componente isolado RiskSlider */}
                                 <RiskSlider
                                     initialRisco={riscoAceito}
