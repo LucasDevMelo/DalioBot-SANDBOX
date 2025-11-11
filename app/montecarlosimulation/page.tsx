@@ -36,16 +36,42 @@ const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
 };
 
 // --- MODIFICADO ---
-// Spinner de loading com o SVG CORRIGIDO e texto pulsante
-function ProgressLoadingSpinner({ progress, phase }: { progress: number; phase: 'calculating' | 'rendering' }) {
+// Spinner de loading com a contagem de renderização CORRIGIDA para equivalência visual.
+function ProgressLoadingSpinner({ 
+    progress, 
+    phase, 
+    currentRenderedLines = 0, // X_real
+    totalSimulations // Y
+}: { 
+    progress: number; 
+    phase: 'calculating' | 'rendering';
+    currentRenderedLines?: number; 
+    totalSimulations: number; 
+}) {
+    
+    const MAX_RENDER_LIMIT = 200; // O limite real do gráfico
     
     const title = phase === 'calculating' 
         ? `Generating Simulations... ${progress}%` 
         : 'Rendering Chart...';
         
-    const subtitle = phase === 'calculating' 
-        ? 'This might take a few moments.' 
-        : 'Finalizing visualization...';
+    let subtitle = 'Finalizing visualization...'; 
+
+    if (phase === 'calculating') {
+        subtitle = 'This might take a few moments.';
+    } else if (phase === 'rendering' && totalSimulations > 0) {
+        
+        // 1. Calcula o progresso visual equivalente (X_visual)
+        const simulationsRenderedEquivalent = Math.round(
+            (currentRenderedLines / MAX_RENDER_LIMIT) * totalSimulations
+        );
+        
+        // 2. Garante que o contador nunca exceda o total (Y)
+        const visualCount = Math.min(simulationsRenderedEquivalent, totalSimulations);
+        
+        // 3. Constrói a mensagem com a contagem visual
+        subtitle = `Rendering: ${visualCount.toLocaleString('pt-BR')}/${totalSimulations.toLocaleString('pt-BR')} lines.`; 
+    }
 
     return (
         <div className="flex flex-1 flex-col justify-center items-center h-full p-8 text-center min-h-[400px]">
@@ -62,6 +88,7 @@ function ProgressLoadingSpinner({ progress, phase }: { progress: number; phase: 
             
             {/* --- TEXTO COM ANIMAÇÃO "PULSE" --- */}
             <p className="text-gray-300 font-semibold animate-pulse">{title}</p>
+            {/* NOVO: Exibe o subtítulo dinâmico */}
             <p className="text-xs text-gray-500 mt-1 animate-pulse">{subtitle}</p>
         </div>
     );
@@ -69,7 +96,7 @@ function ProgressLoadingSpinner({ progress, phase }: { progress: number; phase: 
 
 // --- Hooks & Interfaces ---
 
-// Hook useDebounce (Sem alterações)
+// Hook useDebounce (Não usado, mas mantido)
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -90,6 +117,92 @@ interface OcorrenciaDrawdown {
     histograma: { name: string; ocorrencias: number }[];
 }
 
+// --- NOVO COMPONENTE: Gerencia a exibição dos resultados de risco ou dos loaders ---
+const RiskResultCards = ({ resultadoRisco, quantidadeSimulacoes, formatCurrency, formatPercentage, isCalculating }: any) => {
+    if (isCalculating) {
+        return (
+            <div className="flex justify-center items-center h-48 bg-slate-800/50 rounded-xl shadow-inner">
+                <div className="text-center">
+                    <svg className="animate-spin h-8 w-8 text-violet-400 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <p className="text-sm font-semibold text-gray-400 animate-pulse">Calculating Risk...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
+            <div className="bg-violet-900/50 border border-violet-700/80 p-4 rounded-lg">
+                <p className="text-sm font-medium text-gray-400 mb-1">Recommended Capital</p>
+                <p className="text-2xl font-bold text-violet-300">{formatCurrency(resultadoRisco.capitalRecomendado)}</p>
+            </div>
+            <div className="bg-emerald-900/50 border border-emerald-700/80 p-4 rounded-lg">
+                <p className="text-sm font-medium text-gray-400 mb-1">Estimated Monthly Return</p>
+                <p className="text-2xl font-bold text-emerald-400">{formatPercentage(resultadoRisco.retornoMensalEstimado)}</p>
+            </div>
+            <div className="bg-red-900/50 border border-red-700/80 p-4 rounded-lg">
+                <p className="text-sm font-medium text-gray-400 mb-1">Estimated Risk of Ruin</p>
+                <p className="text-2xl font-bold text-red-400">{formatPercentage(resultadoRisco.riscoRuinaEstimado)}</p>
+                <p className="text-xs text-gray-500">({resultadoRisco.ocorrenciasRuina} of {quantidadeSimulacoes} sims)</p>
+            </div>
+        </div>
+    );
+};
+// --- FIM DO NOVO COMPONENTE RiskResultCards ---
+
+
+// --- NOVO COMPONENTE ISOLADO RiskSlider (para fluidez no drag) ---
+interface RiskSliderProps {
+    initialRisco: number;
+    onRiscoChange: (newRisco: number) => void;
+    formatPercentage: (value: number, digits: number) => string;
+}
+
+const RiskSlider: React.FC<RiskSliderProps> = React.memo(({ initialRisco, onRiscoChange, formatPercentage }) => {
+    // ESTADO LOCAL para controlar o slider em tempo real sem re-renderizar o pai
+    const [localRisco, setLocalRisco] = useState(initialRisco);
+
+    // Sincroniza o estado local com o prop se o prop mudar (ex: se o usuário mudar de robo)
+    useEffect(() => {
+        setLocalRisco(initialRisco);
+    }, [initialRisco]);
+
+    const handleRiscoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Atualiza apenas o estado local (renderiza apenas este componente)
+        setLocalRisco(Number(e.target.value));
+    };
+
+    const handleRiscoRelease = () => {
+        // onRiscoChange faz o trabalho agrupado no pai
+        onRiscoChange(localRisco);
+    };
+
+    return (
+        <div className="mb-6">
+            <label htmlFor="riscoRange" className="block text-sm font-medium text-gray-300 mb-2">
+                Your Accepted Risk Level: <span className="font-bold text-violet-300">{formatPercentage(localRisco * 100, 0)}</span>
+            </label>
+            <input 
+                id="riscoRange" 
+                type="range" 
+                min={0.05} 
+                max={1} 
+                step={0.01} 
+                value={localRisco} 
+                onChange={handleRiscoChange}
+                onMouseUp={handleRiscoRelease} 
+                onTouchEnd={handleRiscoRelease}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500" 
+            />
+        </div>
+    );
+});
+RiskSlider.displayName = 'RiskSlider';
+// --- FIM DO NOVO COMPONENTE ISOLADO RiskSlider ---
+
 
 // --- Main Content Component ---
 
@@ -104,8 +217,12 @@ function SimulacaoMonteCarloContent() {
 
     const [retornoMedioSimulacao, setRetornoMedioSimulacao] = useState(0.0015);
     const [desvioPadraoSimulacao, setDesvioPadraoSimulacao] = useState(0.01);
+    
+    // ESTADO NOVO: Indica que o cálculo de risco está em andamento (para o loading)
+    const [isRiskCalculating, setIsRiskCalculating] = useState(false);
+    
     const [riscoAceito, setRiscoAceito] = useState(0.20);
-    const riscoAceitoDebounced = useDebounce(riscoAceito, 500);
+    
     const quantidadeSimulacoes = Number(searchParams.get('simulacoes') || 1000);
     const stepsSimulacao = 252;
 
@@ -127,13 +244,33 @@ function SimulacaoMonteCarloContent() {
     const [todosMaioresDrawdownsSimulacao, setTodosMaioresDrawdownsSimulacao] = useState<number[]>([]);
 
     const workerRef = useRef<Worker | null>(null);
+    const riskWorkerRef = useRef<Worker | null>(null); 
 
-    // 'gerarSimulacoes' (Sem alterações)
+    const terminateRiskWorker = useCallback(() => {
+        if (riskWorkerRef.current) {
+            riskWorkerRef.current.terminate();
+            riskWorkerRef.current = null;
+        }
+    }, []);
+
+    // NOVO: Função que agrupa a atualização do risco e do loading.
+    const handleRiscoChange = useCallback((newRisco: number) => {
+        // O React agrupa essas duas chamadas, resultando em uma única reconciliação leve
+        setIsRiskCalculating(true);
+        setRiscoAceito(newRisco);
+    }, []);
+
+
+    // 'gerarSimulacoes' (Modificado para usar startRiskCalculation)
     const gerarSimulacoes = useCallback(() => {
         setChartLoadingState('calculating'); 
         setProgress(0);
         setRenderedLines([]); 
         fullDataRef.current = []; 
+        setIsRiskCalculating(true); // Inicia o loading de risco também na simulação inicial
+        
+        terminateRiskWorker(); // Encerra worker de risco anterior
+        
         setEstatisticas(prev => ({ 
             ...prev, 
             maiorDrawdown: 0, drawdownMedio: 0, menorDrawdown: 0,
@@ -165,12 +302,15 @@ function SimulacaoMonteCarloContent() {
                 setTodosMaioresDrawdownsSimulacao(data.todosMaioresDrawdownsSimulacao);
                 setChartLoadingState('rendering'); 
                 
+                // O cálculo de risco será disparado pelo useEffect que monitora todosMaioresDrawdownsSimulacao
+                
                 worker.terminate();
                 workerRef.current = null;
             } 
             else if (type === 'error') {
                 console.error('Erro no Monte Carlo Worker:', error);
                 setChartLoadingState('done'); 
+                setIsRiskCalculating(false);
                 worker.terminate();
                 workerRef.current = null;
             }
@@ -183,13 +323,14 @@ function SimulacaoMonteCarloContent() {
             desvioPadraoSimulacao
         });
 
-    }, [quantidadeSimulacoes, retornoMedioSimulacao, desvioPadraoSimulacao, stepsSimulacao]);
+    }, [quantidadeSimulacoes, retornoMedioSimulacao, desvioPadraoSimulacao, stepsSimulacao, terminateRiskWorker]);
 
     // useEffect para renderização "fatiada" (Sem alterações)
     useEffect(() => {
         if (chartLoadingState === 'rendering') {
             const CHUNK_SIZE = 20; 
             const MAX_LINES = Math.min(fullDataRef.current.length, 200);
+            
             let currentChunk = 0;
 
             function renderNextChunk() {
@@ -219,27 +360,52 @@ function SimulacaoMonteCarloContent() {
                 workerRef.current.terminate();
                 workerRef.current = null;
             }
+            terminateRiskWorker();
         };
-    }, [gerarSimulacoes]);
+    }, [gerarSimulacoes, terminateRiskWorker]);
 
-    // useEffect de cálculo de Risco (Sem alterações)
+    // CORRIGIDO: useEffect de cálculo de Risco (usa setTimeout para assincronia)
     useEffect(() => {
-        if (todosMaioresDrawdownsSimulacao.length === 0 || (estatisticas.maiorDrawdown === 0 && estatisticas.drawdownMedio === 0)) {
+        terminateRiskWorker(); 
+
+        if (todosMaioresDrawdownsSimulacao.length === 0 || estatisticas.maiorDrawdown === 0) {
             setResultadoRisco({ capitalRecomendado: 0, retornoMensalEstimado: 0, riscoRuinaEstimado: 0, ocorrenciasRuina: 0 });
+            setIsRiskCalculating(false);
             return;
         }
-        const baseParaCapital = Math.abs(estatisticas.maiorDrawdown !== 0 ? estatisticas.maiorDrawdown : estatisticas.drawdownMedio);
-        if (baseParaCapital === 0 || riscoAceitoDebounced === 0) {
-            setResultadoRisco({ capitalRecomendado: Infinity, retornoMensalEstimado: 0, riscoRuinaEstimado: 0, ocorrenciasRuina: 0 });
-            return;
-        }
-        const capitalRec = baseParaCapital / riscoAceitoDebounced;
-        const retornoMensalEst = (estatisticas.mediaMes / capitalRec) * 100;
-        const limiteQuebra = -capitalRec;
-        const ocorrenciasDeRuina = todosMaioresDrawdownsSimulacao.filter(dd => dd <= limiteQuebra).length;
-        const riscoDeRuina = todosMaioresDrawdownsSimulacao.length > 0 ? (ocorrenciasDeRuina / todosMaioresDrawdownsSimulacao.length) * 100 : 0;
-        setResultadoRisco({ capitalRecomendado: capitalRec, retornoMensalEstimado: retornoMensalEst, riscoRuinaEstimado: riscoDeRuina, ocorrenciasRuina: ocorrenciasDeRuina });
-    }, [riscoAceitoDebounced, todosMaioresDrawdownsSimulacao, estatisticas.maiorDrawdown, estatisticas.drawdownMedio, estatisticas.mediaMes]);
+
+        // Ação assíncrona: garantir que o spinner seja pintado antes de iniciar o Worker.
+        const timer = setTimeout(() => {
+            
+            // 2. Cria e inicia o Worker de Risco
+            const worker = new Worker(new URL('./riskcalculatorworker.tsx', import.meta.url));
+            riskWorkerRef.current = worker;
+
+            worker.onmessage = (event) => {
+                // 4. Recebe o resultado do Worker
+                const { resultado } = event.data;
+                setResultadoRisco(resultado);
+                setIsRiskCalculating(false); // Desativa o loading
+                riskWorkerRef.current?.terminate();
+                riskWorkerRef.current = null;
+            };
+
+            // 3. Envia os dados e o novo risco para o Worker
+            worker.postMessage({
+                riscoAceito,
+                todosMaioresDrawdownsSimulacao,
+                maiorDrawdown: estatisticas.maiorDrawdown,
+                drawdownMedio: estatisticas.drawdownMedio,
+                mediaMes: estatisticas.mediaMes
+            });
+        }, 0); 
+
+        return () => {
+            // Cleanup: encerra o timer e o worker se a dependência mudar
+            clearTimeout(timer);
+            terminateRiskWorker();
+        };
+    }, [riscoAceito, todosMaioresDrawdownsSimulacao, estatisticas.maiorDrawdown, estatisticas.drawdownMedio, estatisticas.mediaMes, terminateRiskWorker]);
 
     // Funções de Formatação (Sem alterações)
     const formatCurrency = (value: number) => {
@@ -267,7 +433,6 @@ function SimulacaoMonteCarloContent() {
     };
 
     // --- JSX (Renderização) ---
-    // (A lógica do JSX não foi alterada)
     return (
         <div className="min-h-screen flex flex-col bg-slate-900 text-gray-300">
             <Topbar />
@@ -343,7 +508,10 @@ function SimulacaoMonteCarloContent() {
                                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800/90 rounded-2xl backdrop-blur-sm">
                                     <ProgressLoadingSpinner 
                                         progress={progress} 
-                                        phase={chartLoadingState as 'calculating' | 'rendering'} 
+                                        phase={chartLoadingState as 'calculating' | 'rendering'}
+                                        // PASSANDO: renderedLines.length / quantidadeSimulacoes
+                                        currentRenderedLines={renderedLines.length}
+                                        totalSimulations={quantidadeSimulacoes} 
                                     />
                                 </div>
                             )}
@@ -445,28 +613,23 @@ function SimulacaoMonteCarloContent() {
                             {/* Risk Management Card */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                 <h3 className="text-lg font-semibold text-violet-400 mb-5 text-center border-b border-slate-700 pb-3">Suggested Risk Management</h3>
-                                <div className="mb-6">
-                                    <label htmlFor="riscoRange" className="block text-sm font-medium text-gray-300 mb-2">
-                                        Your Accepted Risk Level: <span className="font-bold text-violet-300">{formatPercentage(riscoAceito * 100, 0)}</span>
-                                    </label>
-                                    <input id="riscoRange" type="range" min={0.05} max={1} step={0.01} value={riscoAceito} onChange={(e) => setRiscoAceito(Number(e.target.value))}
-                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500" />
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
-                                    <div className="bg-violet-900/50 border border-violet-700/80 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-400 mb-1">Recommended Capital</p>
-                                        <p className="text-2xl font-bold text-violet-300">{formatCurrency(resultadoRisco.capitalRecomendado)}</p>
-                                    </div>
-                                    <div className="bg-emerald-900/50 border border-emerald-700/80 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-400 mb-1">Estimated Monthly Return</p>
-                                        <p className="text-2xl font-bold text-emerald-400">{formatPercentage(resultadoRisco.retornoMensalEstimado)}</p>
-                                    </div>
-                                    <div className="bg-red-900/50 border border-red-700/80 p-4 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-400 mb-1">Estimated Risk of Ruin</p>
-                                        <p className="text-2xl font-bold text-red-400">{formatPercentage(resultadoRisco.riscoRuinaEstimado)}</p>
-                                        <p className="text-xs text-gray-500">({resultadoRisco.ocorrenciasRuina} of {quantidadeSimulacoes} sims)</p>
-                                    </div>
-                                </div>
+                                
+                                {/* Uso do componente isolado RiskSlider */}
+                                <RiskSlider
+                                    initialRisco={riscoAceito}
+                                    onRiscoChange={handleRiscoChange}
+                                    formatPercentage={formatPercentage}
+                                />
+
+                                {/* Uso do novo componente RiskResultCards para exibir resultados ou loading */}
+                                <RiskResultCards
+                                    resultadoRisco={resultadoRisco}
+                                    quantidadeSimulacoes={quantidadeSimulacoes}
+                                    formatCurrency={formatCurrency}
+                                    formatPercentage={formatPercentage}
+                                    isCalculating={isRiskCalculating}
+                                />
+
                                 <p className="text-xs text-slate-500 mt-6 text-center">
                                     *Estimates based on simulations and the selected risk level. This is not a guarantee of future results.
                                 </p>
