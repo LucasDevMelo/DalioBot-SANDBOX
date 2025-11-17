@@ -1,7 +1,12 @@
+// ========================================================
+//  page.tsx — Monte Carlo Dashboard (Risk Buttons versão)
+// ========================================================
+
 'use client';
 
-import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
+import { useEffect, useState, Suspense, useCallback, useRef, startTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
+import React from 'react';
 import {
     LineChart, Line, XAxis, YAxis, ResponsiveContainer,
     AreaChart, Area, Tooltip as RechartsTooltip, CartesianGrid,
@@ -9,11 +14,29 @@ import {
 } from 'recharts';
 import Topbar from '@/components/topbar';
 import Sidebar from '@/components/sidebar';
-import React from 'react';
 
-// --- Reusable Components ---
 
-// Componente Tooltip (Sem alterações)
+// -------------------------
+// Tooltip do Monte Carlo
+// -------------------------
+
+const RiskLoadingOverlay = ({
+    calculatingProgress,
+}: {
+    calculatingProgress: number;
+}) => {
+    return (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm rounded-xl">
+            <ProgressLoadingSpinner
+                calculatingProgress={calculatingProgress}
+                phase="calculating"
+                currentRenderedLines={0}
+                totalSimulations={100}
+            />
+        </div>
+    );
+};
+
 const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
     if (active && payload && payload.length) {
         const values = payload.map((p: any) => p.value).sort((a: number, b: number) => a - b);
@@ -35,7 +58,9 @@ const MonteCarloTooltip = ({ active, payload, label, formatter }: any) => {
     return null;
 };
 
-// --- MODIFICADO: ProgressLoadingSpinner ajustado para saltos de 25% na barra de progresso ---
+// -------------------------
+// Progress Loader (overlay)
+// -------------------------
 function ProgressLoadingSpinner({
     calculatingProgress,
     phase,
@@ -48,80 +73,51 @@ function ProgressLoadingSpinner({
     totalSimulations: number;
 }) {
 
-    const MAX_RENDER_LIMIT = 200; // O limite real do gráfico
+    const MAX_RENDER_LIMIT = 200;
 
     const title = phase === 'calculating'
         ? `Generating Simulations... ${calculatingProgress}%`
         : 'Rendering Chart...';
 
     let subtitle = 'Finalizing visualization...';
-    let visualCount = 0;
-
-    // --- Lógica do Progresso da Barra ---
     let actualBarPercentage = 0;
 
     if (phase === 'calculating') {
         subtitle = 'This might take a few moments.';
-        actualBarPercentage = calculatingProgress; // Usa o progresso contínuo do worker
+        actualBarPercentage = calculatingProgress;
     } else if (phase === 'rendering' && totalSimulations > 0) {
+        const simulationsRenderedEquivalent = Math.round((currentRenderedLines / MAX_RENDER_LIMIT) * totalSimulations);
+        const continuousProgressPercentage = (simulationsRenderedEquivalent / totalSimulations) * 100;
 
-        // 1. Calcula o progresso visual equivalente (X_visual)
-        const simulationsRenderedEquivalent = Math.round(
-            (currentRenderedLines / MAX_RENDER_LIMIT) * totalSimulations
-        );
+        if (continuousProgressPercentage >= 90) actualBarPercentage = 100;
+        else if (continuousProgressPercentage >= 65) actualBarPercentage = 75;
+        else if (continuousProgressPercentage >= 40) actualBarPercentage = 50;
+        else if (continuousProgressPercentage >= 15) actualBarPercentage = 25;
+        else actualBarPercentage = 0;
 
-        // 2. Garante que o contador nunca exceda o total (Y)
-        visualCount = Math.min(simulationsRenderedEquivalent, totalSimulations);
-
-        // 3. Calcula a porcentagem total de progresso na renderização (contínua)
-        const continuousProgressPercentage = (visualCount / totalSimulations) * 100;
-
-        // 4. Mapeia a porcentagem contínua para saltos discretos (25%, 50%, 75%, 100%)
-        let discreetBarPercentage = 0;
-        if (continuousProgressPercentage >= 90) {
-            discreetBarPercentage = 100;
-        } else if (continuousProgressPercentage >= 65) {
-            discreetBarPercentage = 75;
-        } else if (continuousProgressPercentage >= 40) {
-            discreetBarPercentage = 50;
-        } else if (continuousProgressPercentage >= 15) {
-            discreetBarPercentage = 25;
-        } else {
-            // Mantém 0% até atingir o primeiro limiar
-            discreetBarPercentage = 0;
-        }
-
-        actualBarPercentage = discreetBarPercentage; // A barra agora usa o valor discreto
-
-        // 5. Constrói a mensagem com a contagem visual
-        subtitle = `Rendering: ${visualCount.toLocaleString('pt-BR')}/${totalSimulations.toLocaleString('pt-BR')} lines loaded.`;
+        subtitle = `Rendering: ${Math.min(simulationsRenderedEquivalent, totalSimulations).toLocaleString('pt-BR')}/${totalSimulations.toLocaleString('pt-BR')} lines loaded.`;
     }
 
     return (
         <div className="flex flex-1 flex-col justify-center items-center h-full p-8 text-center min-h-[400px]">
-            {/* --- SVG CORRIGIDO --- */}
             <svg className="animate-spin h-12 w-12 text-violet-400 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            {/* --- FIM DA CORREÇÃO --- */}
 
             <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2.5 mb-2 shadow-inner">
-                {/* APLICANDO A PORCENTAGEM DISCRETA CALCULADA */}
                 <div className="bg-violet-500 h-2.5 rounded-full transition-all duration-150" style={{ width: `${actualBarPercentage}%` }}></div>
             </div>
 
-            {/* --- TEXTO COM ANIMAÇÃO "PULSE" --- */}
             <p className="text-gray-300 font-semibold animate-pulse">{title}</p>
-            {/* NOVO: Exibe o subtítulo dinâmico */}
             <p className="text-xs text-gray-500 mt-1 animate-pulse">{subtitle}</p>
         </div>
     );
 }
 
-// --- Hooks & Interfaces ---
-
-// Hook useDebounce (Não usado, mas mantido)
+// -------------------------
+// Hooks & Interfaces
+// -------------------------
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -131,18 +127,16 @@ function useDebounce<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
-// Interfaces (Sem alterações)
 interface PathPoint { step: number; value: number; }
 interface Simulation { path: PathPoint[]; color: string; }
 interface OcorrenciaDrawdown {
-    label: string;
-    limite: number;
-    vezes: number;
-    porcentagem: number;
+    label: string; limite: number; vezes: number; porcentagem: number;
     histograma: { name: string; ocorrencias: number }[];
 }
 
-// --- NOVO COMPONENTE: Gerencia a exibição dos resultados de risco ou dos loaders ---
+// -------------------------
+// Risk result cards
+// -------------------------
 const RiskResultCards = ({ resultadoRisco, quantidadeSimulacoes, formatCurrency, formatPercentage, isCalculating }: any) => {
     if (isCalculating) {
         return (
@@ -176,95 +170,89 @@ const RiskResultCards = ({ resultadoRisco, quantidadeSimulacoes, formatCurrency,
         </div>
     );
 };
-// --- FIM DO NOVO COMPONENTE RiskResultCards ---
 
-
-// --- NOVO COMPONENTE ISOLADO RiskSlider (para fluidez no drag) ---
-interface RiskSliderProps {
-    initialRisco: number;
-    onRiscoChange: (newRisco: number) => void;
-    formatPercentage: (value: number, digits: number) => string;
-}
-
-const RiskSlider: React.FC<RiskSliderProps> = React.memo(({ initialRisco, onRiscoChange, formatPercentage }) => {
-    // ESTADO LOCAL para controlar o slider em tempo real sem re-renderizar o pai
-    const [localRisco, setLocalRisco] = useState(initialRisco);
-
-    // Sincroniza o estado local com o prop se o prop mudar (ex: se o usuário mudar de robo)
-    useEffect(() => {
-        setLocalRisco(initialRisco);
-    }, [initialRisco]);
-
-    const handleRiscoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Atualiza apenas o estado local (renderiza apenas este componente)
-        setLocalRisco(Number(e.target.value));
-    };
-
-    const handleRiscoRelease = () => {
-        // onRiscoChange faz o trabalho agrupado no pai
-        onRiscoChange(localRisco);
-    };
+// -------------------------
+// Risk Buttons (no slider)
+// -------------------------
+const RiskButtons = React.memo(function RiskButtons({
+    riscoAceito,
+    onRiscoChange
+}: {
+    riscoAceito: number;
+    onRiscoChange: (value: number) => void;
+}) {
+    const options = [
+        { label: "25%", value: 0.25 },
+        { label: "50%", value: 0.50 },
+        { label: "75%", value: 0.75 },
+        { label: "100%", value: 1.00 },
+    ];
 
     return (
-        <div className="mb-6">
-            <label htmlFor="riscoRange" className="block text-sm font-medium text-gray-300 mb-2">
-                Your Accepted Risk Level: <span className="font-bold text-violet-300">{formatPercentage(localRisco * 100, 0)}</span>
-            </label>
-            <input
-                id="riscoRange"
-                type="range"
-                min={0.05}
-                max={1}
-                step={0.01}
-                value={localRisco}
-                onChange={handleRiscoChange}
-                onMouseUp={handleRiscoRelease}
-                onTouchEnd={handleRiscoRelease}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
-            />
+        <div className="flex items-center justify-center gap-3 mb-6 flex-wrap">
+            {options.map(opt => (
+                <button
+                    key={opt.value}
+                    onClick={() => onRiscoChange(opt.value)}
+                    className={`
+                        px-4 py-2 rounded-lg border text-sm font-semibold transition-all
+                        ${riscoAceito === opt.value
+                            ? "bg-violet-600 border-violet-400 text-white"
+                            : "bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"}
+                    `}
+                >
+                    {opt.label}
+                </button>
+            ))}
         </div>
     );
 });
-RiskSlider.displayName = 'RiskSlider';
-// --- FIM DO NOVO COMPONENTE ISOLADO RiskSlider ---
 
+// -------------------------
+// StatCard helper
+// -------------------------
+const StatCard = ({ label, value, color }: { label: string; value: string | number; color: string; }) => (
+    <div>
+        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+        <p className="text-sm font-medium text-gray-400 mt-1">{label}</p>
+    </div>
+);
 
-// --- Main Content Component ---
-
+// -------------------------
+// Main Content
+// -------------------------
 function SimulacaoMonteCarloContent() {
     const [sidebarAberta, setSidebarAberta] = useState(false);
     const searchParams = useSearchParams();
     const nomeRobo = searchParams.get('robo') || "Unknown Bot";
 
-    // Estados de loading (Sem alterações)
     const [chartLoadingState, setChartLoadingState] = useState<'calculating' | 'rendering' | 'done'>('calculating');
     const [calculatingProgress, setCalculatingProgress] = useState(0);
 
-    const [retornoMedioSimulacao, setRetornoMedioSimulacao] = useState(0.0015);
-    const [desvioPadraoSimulacao, setDesvioPadraoSimulacao] = useState(0.01);
+    const [retornoMedioSimulacao] = useState(0.0015);
+    const [desvioPadraoSimulacao] = useState(0.01);
 
-    // ESTADO NOVO: Indica que o cálculo de risco está em andamento (para o loading)
     const [isRiskCalculating, setIsRiskCalculating] = useState(false);
-
-    const [riscoAceito, setRiscoAceito] = useState(0.20);
+    const [riscoAceito, setRiscoAceito] = useState(0.25);
 
     const quantidadeSimulacoes = Number(searchParams.get('simulacoes') || 1000);
     const stepsSimulacao = 252;
 
-    // Estados de dados (Sem alterações)
-    const fullDataRef = useRef<Simulation[]>([]);
-    const [renderedLines, setRenderedLines] = useState<Simulation[]>([]);
-    const [estatisticas, setEstatisticas] = useState({
+    const fullDataRef = useRef<any[]>([]);
+    const [renderedLines, setRenderedLines] = useState<any[]>([]);
+    const [estatisticas, setEstatisticas] = useState<any>({
         maiorDrawdown: 0, drawdownMedio: 0, menorDrawdown: 0,
-        desvioPadraoDrawdowns: 0, ocorrenciasDrawdown: [] as OcorrenciaDrawdown[],
-        melhorEstagnacao: Infinity, piorEstagnacao: 0, mediaEstagnacao: 0,
-        melhorMes: -Infinity, piorMes: Infinity, mediaMes: 0,
-        histMensal: [] as number[],
+        desvioPadraoDrawdowns: 0, ocorrenciasDrawdown: [],
+        melhorEstagnacao: 0, piorEstagnacao: 0, mediaEstagnacao: 0,
+        melhorMes: 0, piorMes: 0, mediaMes: 0,
+        histMensal: [],
         frequenciaPeriodosNegativos: { meses: 0, trimestres: 0, semestres: 0, anos: 0 },
     });
-    const [resultadoRisco, setResultadoRisco] = useState({
-        capitalRecomendado: 0, retornoMensalEstimado: 0,
-        riscoRuinaEstimado: 0, ocorrenciasRuina: 0
+    const [resultadoRisco, setResultadoRisco] = useState<any>({
+        capitalRecomendado: 0,
+        retornoMensalEstimado: 0,
+        riscoRuinaEstimado: 0,
+        ocorrenciasRuina: 0
     });
     const [todosMaioresDrawdownsSimulacao, setTodosMaioresDrawdownsSimulacao] = useState<number[]>([]);
 
@@ -278,25 +266,25 @@ function SimulacaoMonteCarloContent() {
         }
     }, []);
 
-    // NOVO: Função que agrupa a atualização do risco e do loading.
     const handleRiscoChange = useCallback((newRisco: number) => {
-        // O React agrupa essas duas chamadas, resultando em uma única reconciliação leve
-        setIsRiskCalculating(true);
-        setRiscoAceito(newRisco);
+        startTransition(() => {
+            setIsRiskCalculating(true);
+            setRiscoAceito(newRisco);
+        });
     }, []);
 
 
-    // 'gerarSimulacoes' 
+    // gerarSimulacoes (usa worker .ts — verifique se o arquivo existe como .ts)
     const gerarSimulacoes = useCallback(() => {
         setChartLoadingState('calculating');
-        setCalculatingProgress(0); // Usa calculatingProgress
+        setCalculatingProgress(0);
         setRenderedLines([]);
         fullDataRef.current = [];
-        setIsRiskCalculating(true); // Inicia o loading de risco também na simulação inicial
+        setIsRiskCalculating(true);
 
-        terminateRiskWorker(); // Encerra worker de risco anterior
+        terminateRiskWorker();
 
-        setEstatisticas(prev => ({
+        setEstatisticas((prev: any) => ({
             ...prev,
             maiorDrawdown: 0, drawdownMedio: 0, menorDrawdown: 0,
             desvioPadraoDrawdowns: 0, ocorrenciasDrawdown: [],
@@ -309,8 +297,10 @@ function SimulacaoMonteCarloContent() {
 
         if (workerRef.current) {
             workerRef.current.terminate();
+            workerRef.current = null;
         }
 
+        // NOTE: apontar para .ts (ou .js) build-friendly — ajuste conforme seu build pipeline
         const worker = new Worker(new URL('./montecarloworker.tsx', import.meta.url));
         workerRef.current = worker;
 
@@ -318,19 +308,17 @@ function SimulacaoMonteCarloContent() {
             const { type, progress, data, error } = event.data;
 
             if (type === 'progress') {
-                setCalculatingProgress(progress); // Usa calculatingProgress
-            }
-            else if (type === 'result') {
-                setCalculatingProgress(100); // Usa calculatingProgress
-                fullDataRef.current = data.monteCarloData;
-                setEstatisticas(data.estatisticas);
-                setTodosMaioresDrawdownsSimulacao(data.todosMaioresDrawdownsSimulacao);
+                setCalculatingProgress(progress);
+            } else if (type === 'result') {
+                setCalculatingProgress(100);
+                fullDataRef.current = data.monteCarloData || [];
+                setEstatisticas(data.estatisticas || {});
+                setTodosMaioresDrawdownsSimulacao(data.todosMaioresDrawdownsSimulacao || []);
                 setChartLoadingState('rendering');
 
                 worker.terminate();
                 workerRef.current = null;
-            }
-            else if (type === 'error') {
+            } else if (type === 'error') {
                 console.error('Erro no Monte Carlo Worker:', error);
                 setChartLoadingState('done');
                 setIsRiskCalculating(false);
@@ -345,10 +333,9 @@ function SimulacaoMonteCarloContent() {
             retornoMedioSimulacao,
             desvioPadraoSimulacao
         });
-
     }, [quantidadeSimulacoes, retornoMedioSimulacao, desvioPadraoSimulacao, stepsSimulacao, terminateRiskWorker]);
 
-    // useEffect para renderização "fatiada" (Sem alterações)
+    // render por chunks
     useEffect(() => {
         if (chartLoadingState === 'rendering') {
             const CHUNK_SIZE = 20;
@@ -367,6 +354,7 @@ function SimulacaoMonteCarloContent() {
                     requestAnimationFrame(renderNextChunk);
                 } else {
                     setChartLoadingState('done');
+                    // free memory
                     fullDataRef.current = [];
                 }
             }
@@ -374,7 +362,7 @@ function SimulacaoMonteCarloContent() {
         }
     }, [chartLoadingState]);
 
-    // useEffect de inicialização (Sem alterações)
+    // inicialização
     useEffect(() => {
         gerarSimulacoes();
 
@@ -387,7 +375,7 @@ function SimulacaoMonteCarloContent() {
         };
     }, [gerarSimulacoes, terminateRiskWorker]);
 
-    // CORRIGIDO: useEffect de cálculo de Risco (usa setTimeout para assincronia)
+    // recalcula risco quando riscoAceito muda — usa worker de risco (apontar para .ts)
     useEffect(() => {
         terminateRiskWorker();
 
@@ -397,40 +385,42 @@ function SimulacaoMonteCarloContent() {
             return;
         }
 
-        // Ação assíncrona: garantir que o spinner seja pintado antes de iniciar o Worker.
-        const timer = setTimeout(() => {
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const worker = new Worker(new URL('./riskcalculatorworker.tsx', import.meta.url));
+                riskWorkerRef.current = worker;
 
-            // 2. Cria e inicia o Worker de Risco
-            const worker = new Worker(new URL('./riskcalculatorworker.tsx', import.meta.url));
-            riskWorkerRef.current = worker;
+                worker.onmessage = (event) => {
+                    const { resultado } = event.data || {};
+                    setResultadoRisco(resultado || {
+                        capitalRecomendado: 0,
+                        retornoMensalEstimado: 0,
+                        riscoRuinaEstimado: 0,
+                        ocorrenciasRuina: 0
+                    });
+                    setIsRiskCalculating(false);
+                    riskWorkerRef.current?.terminate();
+                    riskWorkerRef.current = null;
+                };
 
-            worker.onmessage = (event) => {
-                // 4. Recebe o resultado do Worker
-                const { resultado } = event.data;
-                setResultadoRisco(resultado);
-                setIsRiskCalculating(false); // Desativa o loading
-                riskWorkerRef.current?.terminate();
-                riskWorkerRef.current = null;
-            };
+                worker.postMessage({
+                    riscoAceito,
+                    todosMaioresDrawdownsSimulacao,
+                    maiorDrawdown: estatisticas.maiorDrawdown,
+                    drawdownMedio: estatisticas.drawdownMedio,
+                    mediaMes: estatisticas.mediaMes
+                });
+            }, 0);
+        });
 
-            // 3. Envia os dados e o novo risco para o Worker
-            worker.postMessage({
-                riscoAceito,
-                todosMaioresDrawdownsSimulacao,
-                maiorDrawdown: estatisticas.maiorDrawdown,
-                drawdownMedio: estatisticas.drawdownMedio,
-                mediaMes: estatisticas.mediaMes
-            });
-        }, 0);
 
         return () => {
-            // Cleanup: encerra o timer e o worker se a dependência mudar
-            clearTimeout(timer);
             terminateRiskWorker();
         };
+
     }, [riscoAceito, todosMaioresDrawdownsSimulacao, estatisticas.maiorDrawdown, estatisticas.drawdownMedio, estatisticas.mediaMes, terminateRiskWorker]);
 
-    // Funções de Formatação (Sem alterações)
+    // formatadores
     const formatCurrency = (value: number) => {
         if (value === Infinity || value === -Infinity || isNaN(value)) return "N/A";
         return `$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -443,6 +433,7 @@ function SimulacaoMonteCarloContent() {
         if (value === Infinity || value === -Infinity || isNaN(value)) return "N/A";
         return `${Math.round(value)} days`;
     };
+
     const tooltipStyle = {
         contentStyle: {
             backgroundColor: 'rgba(30, 41, 59, 0.9)',
@@ -455,27 +446,28 @@ function SimulacaoMonteCarloContent() {
         itemStyle: { color: '#94a3b8' }
     };
 
-    // --- JSX (Renderização) ---
+    // JSX
     return (
         <div className="min-h-screen flex flex-col bg-slate-900 text-gray-300">
             <Topbar />
             <div className="md:hidden p-2 bg-slate-800/50 border-b border-slate-700 shadow z-40">
                 <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-violet-400 font-bold text-xl p-2">☰</button>
             </div>
+
             <div className="flex flex-1 overflow-hidden">
                 <div className={`absolute md:static z-50 transition-transform duration-300 transform bg-slate-900 border-r border-slate-800 shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
                     <Sidebar />
                 </div>
+
                 <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                     <header className="mb-8">
                         <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Monte Carlo Simulation</h1>
                         <p className="text-slate-400 mt-1">{nomeRobo} - {quantidadeSimulacoes.toLocaleString('pt-BR')} Scenarios</p>
                     </header>
 
-                    {/* Card do Gráfico (com overlay) */}
+                    {/* Chart card */}
                     <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl shadow-slate-950/50 mb-8">
                         <div className="relative min-h-[500px]">
-
                             <ResponsiveContainer width="100%" height={500}>
                                 <LineChart margin={{ top: 5, right: 20, left: 50, bottom: 25 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -526,13 +518,11 @@ function SimulacaoMonteCarloContent() {
                                 </LineChart>
                             </ResponsiveContainer>
 
-                            {/* O Spinner/Overlay só desaparece quando o gráfico está PRONTO */}
                             {chartLoadingState !== 'done' && (
                                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-800/90 rounded-2xl backdrop-blur-sm">
                                     <ProgressLoadingSpinner
                                         calculatingProgress={calculatingProgress}
                                         phase={chartLoadingState as 'calculating' | 'rendering'}
-                                        // PASSANDO: renderedLines.length / quantidadeSimulacoes
                                         currentRenderedLines={renderedLines.length}
                                         totalSimulations={quantidadeSimulacoes}
                                     />
@@ -541,25 +531,25 @@ function SimulacaoMonteCarloContent() {
                         </div>
                     </section>
 
-                    {/* O resto da página (stats) agora aparece assim que o CÁLCULO termina */}
+                    {/* content that appears after initial calculation */}
                     {chartLoadingState !== 'calculating' && (
                         <div className="space-y-8 animate-fade-in">
-                            {/* Drawdown Analysis Card */}
+                            {/* Drawdown Analysis */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                 <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Drawdown Analysis</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
                                     <StatCard label="Maximum Drawdown" value={formatCurrency(estatisticas.maiorDrawdown)} color="text-red-400" />
                                     <StatCard label="Average Drawdown" value={formatCurrency(estatisticas.drawdownMedio)} color="text-amber-400" />
                                     <StatCard label="Minimum Drawdown" value={formatCurrency(estatisticas.menorDrawdown)} color="text-sky-400" />
-                                    <StatCard label="Standard Deviation (DDs)" value={formatCurrency(estatisticas.desvioPadraoDrawdowns)} color="text-violet-400" />
+                                    <StatCard label="Std Dev (DDs)" value={formatCurrency(estatisticas.desvioPadraoDrawdowns)} color="text-violet-400" />
                                 </div>
                             </section>
 
-                            {/* Drawdown Occurrences Card */}
+                            {/* Drawdown Occurrences */}
                             <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                 <h3 className="text-lg text-center font-semibold text-violet-400 mb-5 border-b border-slate-700 pb-3">Drawdown Occurrences</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {estatisticas.ocorrenciasDrawdown.map((item, index) => (
+                                    {estatisticas.ocorrenciasDrawdown.map((item: OcorrenciaDrawdown, index: number) => (
                                         <div key={index} className="bg-slate-800 rounded-xl p-4 shadow-inner flex flex-col items-center text-center">
                                             <h4 className="text-sm font-semibold text-gray-300 mb-2"> {item.label} </h4>
                                             <p className="text-xl font-bold text-violet-400 mb-1">{formatCurrency(item.limite)}</p>
@@ -571,7 +561,7 @@ function SimulacaoMonteCarloContent() {
                                                             <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#9ca3af' }} interval="preserveStartEnd" />
                                                             <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} allowDecimals={false} />
                                                             <RechartsTooltip {...tooltipStyle} formatter={(value: number) => [value, "Occurrences"]} />
-                                                            <Bar dataKey="ocorrencias" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                                                            <Bar dataKey="ocorrencias" radius={[4, 4, 0, 0]} fill="#8b5cf6" />
                                                         </BarChart>
                                                     </ResponsiveContainer>
                                                 </div>
@@ -581,7 +571,7 @@ function SimulacaoMonteCarloContent() {
                                 </div>
                             </section>
 
-                            {/* Stagnation and Monthly Results Cards */}
+                            {/* Stagnation and Monthly */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                     <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Stagnation Period</h3>
@@ -591,6 +581,7 @@ function SimulacaoMonteCarloContent() {
                                         <StatCard label="Longest" value={formatDays(estatisticas.piorEstagnacao)} color="text-red-400" />
                                     </div>
                                 </section>
+
                                 <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                     <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Monthly Results</h3>
                                     <div className="grid grid-cols-3 gap-4 text-center">
@@ -601,13 +592,13 @@ function SimulacaoMonteCarloContent() {
                                 </section>
                             </div>
 
-                            {/* Distribution and Frequency Cards */}
+                            {/* Distribution & Frequency */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {estatisticas.histMensal.length > 0 && (
                                     <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                         <h3 className="text-lg text-center font-semibold text-violet-400 mb-4 border-b border-slate-700 pb-3">Monthly Results Distribution</h3>
                                         <ResponsiveContainer width="100%" height={200}>
-                                            <AreaChart data={estatisticas.histMensal.map((valor, i) => ({ x: i + 1, y: valor }))} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
+                                            <AreaChart data={estatisticas.histMensal.map((valor: number, i: number) => ({ x: i + 1, y: valor }))} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                                                 <defs>
                                                     <linearGradient id="colorMonthly" x1="0" y1="0" x2="0" y2="1">
                                                         <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.7} />
@@ -622,6 +613,7 @@ function SimulacaoMonteCarloContent() {
                                         </ResponsiveContainer>
                                     </section>
                                 )}
+
                                 <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
                                     <h3 className="text-lg font-semibold text-violet-400 mb-4 text-center border-b border-slate-700 pb-3">Frequency of Negative Periods</h3>
                                     <div className="grid grid-cols-2 gap-4 text-center">
@@ -633,18 +625,26 @@ function SimulacaoMonteCarloContent() {
                                 </section>
                             </div>
 
-                            {/* Risk Management Card */}
-                            <section className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
-                                <h3 className="text-lg font-semibold text-violet-400 mb-5 text-center border-b border-slate-700 pb-3">Suggested Risk Management</h3>
+                            {/* Suggested Risk Management — agora com botões */}
+                            <section className="relative bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
 
-                                {/* Uso do componente isolado RiskSlider */}
-                                <RiskSlider
-                                    initialRisco={riscoAceito}
+                                {/* --- Overlay de carregamento do risco --- */}
+                                {isRiskCalculating && (
+                                    <RiskLoadingOverlay calculatingProgress={calculatingProgress} />
+                                )}
+
+                                <h3 className="text-lg font-semibold text-violet-400 mb-5 text-center border-b border-slate-700 pb-3">
+                                    Suggested Risk Management
+                                </h3>
+
+
+                                <RiskButtons
+                                    riscoAceito={riscoAceito}
                                     onRiscoChange={handleRiscoChange}
-                                    formatPercentage={formatPercentage}
                                 />
 
-                                {/* Uso do novo componente RiskResultCards para exibir resultados ou loading */}
+
+
                                 <RiskResultCards
                                     resultadoRisco={resultadoRisco}
                                     quantidadeSimulacoes={quantidadeSimulacoes}
@@ -665,27 +665,18 @@ function SimulacaoMonteCarloContent() {
     );
 }
 
-// Helper component StatCard (Sem alterações)
-const StatCard = ({ label, value, color }: { label: string; value: string; color: string; }) => (
-    <div>
-        <p className={`text-2xl font-bold ${color}`}>{value}</p>
-        <p className="text-sm font-medium text-gray-400 mt-1">{label}</p>
-    </div>
-);
-
-
-// --- Page Component Wrapper ---
+// -------------------------
+// Page wrapper export
+// -------------------------
 export default function SimulacaoMonteCarloPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-slate-900">
                 <div className="text-center">
-                    {/* --- SVG CORRIGIDO --- */}
                     <svg className="animate-spin h-10 w-10 text-violet-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
-                    {/* --- FIM DA CORREÇÃO --- */}
                     <p className="text-lg font-semibold text-gray-300">Loading Simulation...</p>
                     <p className="text-sm text-gray-500">Fetching parameters and preparing the environment.</p>
                 </div>
