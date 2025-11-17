@@ -189,25 +189,37 @@ const RiskButtons = React.memo(function RiskButtons({
     ];
 
     return (
-        <div className="flex items-center justify-center gap-3 mb-6 flex-wrap">
-            {options.map(opt => (
-                <button
-                    key={opt.value}
-                    onClick={() => onRiscoChange(opt.value)}
-                    className={`
-                        px-4 py-2 rounded-lg border text-sm font-semibold transition-all
-                        ${riscoAceito === opt.value
-                            ? "bg-violet-600 border-violet-400 text-white"
-                            : "bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"}
-                    `}
-                >
-                    {opt.label}
-                </button>
-            ))}
+        // NOVO Wrapper: Alinha o texto e os botões horizontalmente
+        // Adicionado 'flex-wrap' para quebrar em telas pequenas
+        <div className="flex items-center justify-center gap-4 mb-6 flex-wrap">
+            
+            {/* O novo rótulo de texto */}
+            <span className="text-sm font-semibold text-slate-300">
+                Your accepted risk level:
+            </span>
+
+            {/* O container "pílula" original (agora sem o mb-6) */}
+            <div className="flex items-center gap-1 bg-slate-700/80 rounded-full p-1.5 shadow-inner">
+                {options.map(opt => (
+                    <button
+                        key={opt.value}
+                        onClick={() => onRiscoChange(opt.value)}
+                        className={`
+                            px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 ease-in-out
+                            ${riscoAceito === opt.value
+                                // Estilo ATIVO: A pílula roxa que se move
+                                ? "bg-violet-600 text-white shadow-md"
+                                // Estilo INATIVO: Fundo transparente, apenas texto
+                                : "text-slate-300 hover:text-white"}
+                        `}
+                    >
+                        {opt.label}
+                    </button>
+                ))}
+            </div>
         </div>
     );
 });
-
 // -------------------------
 // StatCard helper
 // -------------------------
