@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 
 // --- INTERFACES ---
 type Robo = {
+  id: string; // <--- CORREÇÃO 1: Adicionado ID para garantir unicidade
   nome: string;
   mercado: string;
   ativo: string;
@@ -71,7 +72,8 @@ const RoboTableDesktop = ({ robos, onSimulate }: { robos: Robo[]; onSimulate: (r
         </thead>
         <tbody className="divide-y divide-slate-700">
           {robos.map((robo) => (
-            <tr key={robo.nome} className="hover:bg-slate-700/40 transition-colors">
+            // <--- CORREÇÃO 3: key={robo.id}
+            <tr key={robo.id} className="hover:bg-slate-700/40 transition-colors">
               <td className="py-3 px-4 font-semibold text-purple-400">{robo.nome}</td>
               <td className="py-3 px-4 hidden lg:table-cell">{robo.mercado}</td>
               <td className="py-3 px-4 hidden lg:table-cell">{robo.ativo}</td>
@@ -145,7 +147,10 @@ export default function MontecarloPage() {
         const snapshot = await get(userRobosRef);
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const robosData: Robo[] = Object.values(data).map((robo: any) => ({
+          
+          // --- CORREÇÃO 2: Usando Object.entries para resgatar o ID ---
+          const robosData: Robo[] = Object.entries(data).map(([key, robo]: [string, any]) => ({
+            id: key, // Captura a chave única do Firebase
             nome: robo.nome,
             mercado: robo.mercado,
             ativo: robo.ativo,
@@ -155,6 +160,7 @@ export default function MontecarloPage() {
             fatorLucro: robo.fatorLucro || 0,
             drawdown: robo.drawdown || 0,
           }));
+          
           setRobos(robosData);
         } else {
           setRobos([]);
@@ -255,7 +261,8 @@ export default function MontecarloPage() {
                   <RoboTableDesktop robos={robos} onSimulate={handleVerSimulacao} />
                   <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                     {robos.map((robo) => (
-                      <RoboCardMobile key={robo.nome} robo={robo} onSimulate={handleVerSimulacao} />
+                      // <--- CORREÇÃO 3: key={robo.id}
+                      <RoboCardMobile key={robo.id} robo={robo} onSimulate={handleVerSimulacao} />
                     ))}
                   </div>
                 </div>
