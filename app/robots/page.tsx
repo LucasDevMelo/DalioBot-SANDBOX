@@ -246,7 +246,7 @@ export default function RobosPage() {
                         {/* ✏️ Botão de Editar (Abre o Modal) */}
                         <button
                           onClick={() => abrirModalEdicao(robo)}
-                          className="text-blue-400 hover:text-blue-300 transition p-1 rounded-full hover:bg-slate-700/50"
+                          className="text-pink-400 hover:text-pink-300 transition p-1 rounded-full hover:bg-slate-700/50"
                           title="Edit robot"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

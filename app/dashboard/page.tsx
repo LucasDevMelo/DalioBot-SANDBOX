@@ -261,7 +261,7 @@ function DashboardContent() {
   const [monthlyPerformanceData, setMonthlyPerformanceData] = useState<{ [year: number]: { [month: number]: number } }>({});
   const [isDailyViewOpen, setIsDailyViewOpen] = useState(false);
   const [selectedDateForDailyView, setSelectedDateForDailyView] = useState<{ year: number; month: number } | null>(null);
-  
+
   // NOVOS ESTADOS PARA O GRÁFICO EXPANSÍVEL E DRAWDOWN
   const [showLucroCurvePopup, setShowLucroCurvePopup] = useState(false);
   const [showDrawdownVisible, setShowDrawdownVisible] = useState(false);
@@ -686,11 +686,15 @@ function DashboardContent() {
               // Usa o 'valor' do HTML (Equity DD) se existir, senão usa o DD de Balance calculado
               // Usa as 'datas' e 'maiorLoss' calculadas do CSV (Balance)
               setDrawdownInfo({
+                // Mantemos a lógica do Drawdown como você preferir (ou pode mudar para calculado também se quiser)
                 valor: data.drawdown ? -Math.abs(data.drawdown) : maiorDDValorCalculado,
                 inicio: ddInicio,
                 fim: ddFim,
-                // Usa 'maiorLoss' do HTML se existir, senão o diário calculado
-                maiorLoss: data.maiorLoss ? { valor: data.maiorLoss, data: '' } : maiorPerdaDiaria
+
+                // --- ALTERAÇÃO AQUI ---
+                // Antes estava: data.maiorLoss ? { valor: data.maiorLoss, data: '' } : maiorPerdaDiaria
+                // Agora fica apenas:
+                maiorLoss: maiorPerdaDiaria
               });
 
               // Se a taxaAcerto não veio do HTML (baseada em trades), calcula baseada em dias
@@ -1145,21 +1149,15 @@ function DashboardContent() {
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={profitChartData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
+
+                                {/* VOLTAMOS PARA O XAXIS ANTIGO (Sem scale="time") */}
                                 <XAxis
-                                  dataKey="timestamp"
-                                  type="number"
-                                  scale="time"
-                                  domain={['dataMin', 'dataMax']}
-                                  tickFormatter={(timestamp) =>
-                                    new Date(timestamp).toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "2-digit",
-                                    })
-                                  }
+                                  dataKey="DATE"
+                                  tickFormatter={(dateStr) => new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                                   tick={{ fontSize: 10, fill: chartTextFill }}
                                   interval="preserveStartEnd"
                                 />
+
                                 <YAxis
                                   yAxisId="profit"
                                   domain={['auto', 'auto']}
@@ -1177,27 +1175,27 @@ function DashboardContent() {
                                       })}`;
                                     return [formattedValue, label];
                                   }}
-                                  labelFormatter={(label: string | number) =>
+                                  labelFormatter={(label: string) =>
                                     new Date(label).toLocaleDateString("en-GB")
                                   }
                                   wrapperStyle={chartTooltipWrapperStyle}
                                   contentStyle={chartTooltipContentStyle}
                                 />
-                                {/* Linha do lucro acumulado */}
-<Line
-  yAxisId="profit"
-  type="monotone"   // <--- ESTA É A LINHA QUE CORRIGE (Deixa curva/suave)
-  dataKey="profit"
-  stroke="#a855f7"
-  strokeWidth={2}
-  dot={false}
-  isAnimationActive={false}
-/>
+                                {/* Linha do lucro acumulado igual ao antigo */}
+                                <Line
+                                  yAxisId="profit"
+                                  type="monotone"
+                                  dataKey="profit"
+                                  stroke="#a855f7"
+                                  strokeWidth={2}
+                                  dot={false}
+                                  isAnimationActive={false}
+                                />
                               </LineChart>
                             </ResponsiveContainer>
                           </div>
 
-                          {/* === GRÁFICO 2: Drawdown Opcional === */}
+                          {/* === GRÁFICO 2: Drawdown Opcional (Ajustado para acompanhar o estilo do gráfico de cima) === */}
                           {showDrawdownVisible && (
                             <div className="w-full h-[80px]">
                               <ResponsiveContainer width="100%" height="100%">
@@ -1210,10 +1208,11 @@ function DashboardContent() {
                                     stroke={chartGridStroke}
                                     vertical={false}
                                   />
+                                  {/* XAxis ajustado para combinar com o gráfico principal */}
                                   <XAxis
-                                    dataKey="timestamp"
-                                    tickFormatter={(timestamp) =>
-                                      new Date(timestamp).toLocaleDateString("en-GB", {
+                                    dataKey="DATE"
+                                    tickFormatter={(dateStr) =>
+                                      new Date(dateStr).toLocaleDateString("en-GB", {
                                         day: "2-digit", month: "2-digit", year: "2-digit",
                                       })
                                     }
@@ -1236,7 +1235,7 @@ function DashboardContent() {
                                       `${value.toFixed(2)}%`,
                                       "Max. Drawdown (%)",
                                     ]}
-                                    labelFormatter={(label: string | number) =>
+                                    labelFormatter={(label: string) =>
                                       new Date(label).toLocaleDateString("en-GB")
                                     }
                                     wrapperStyle={chartTooltipWrapperStyle}
@@ -1870,13 +1869,11 @@ function DashboardContent() {
                       <LineChart data={profitChartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
 
+                        {/* XAXIS ALTERADO: Categórico (igual ao dashboard) */}
                         <XAxis
-                          dataKey="timestamp"
-                          type="number"
-                          scale="time"
-                          domain={['dataMin', 'dataMax']}
-                          tickFormatter={(timestamp) =>
-                            new Date(timestamp).toLocaleDateString("en-GB", {
+                          dataKey="DATE"
+                          tickFormatter={(dateStr) =>
+                            new Date(dateStr).toLocaleDateString("pt-BR", {
                               day: "2-digit",
                               month: "2-digit",
                               year: "2-digit",
@@ -1906,7 +1903,7 @@ function DashboardContent() {
                               : `$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                             return [formattedValue, label];
                           }}
-                          labelFormatter={(label: string | number) =>
+                          labelFormatter={(label: string) =>
                             new Date(label).toLocaleDateString('en-GB')
                           }
                           wrapperStyle={chartTooltipWrapperStyle}
@@ -1931,13 +1928,11 @@ function DashboardContent() {
                       <LineChart data={profitChartData} margin={{ top: 0, right: 30, left: 30, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
 
+                        {/* XAXIS ALTERADO: Categórico (igual ao de cima) */}
                         <XAxis
-                          dataKey="timestamp"
-                          type="number"
-                          scale="time"
-                          domain={['dataMin', 'dataMax']}
-                          tickFormatter={(timestamp) =>
-                            new Date(timestamp).toLocaleDateString("en-GB", {
+                          dataKey="DATE"
+                          tickFormatter={(dateStr) =>
+                            new Date(dateStr).toLocaleDateString("pt-BR", {
                               day: "2-digit",
                               month: "2-digit",
                               year: "2-digit",
@@ -1946,6 +1941,7 @@ function DashboardContent() {
                           tick={{ fontSize: 12, fill: chartTextFill }}
                           interval="preserveStartEnd"
                         />
+
                         <YAxis
                           yAxisId="drawdown"
                           domain={['auto', 0]}
@@ -1959,7 +1955,7 @@ function DashboardContent() {
                         />
                         <Tooltip
                           formatter={(value: number) => [`${value.toFixed(2)}%`, "Max. Drawdown (%)"]}
-                          labelFormatter={(label: string | number) => new Date(label).toLocaleDateString('en-GB')}
+                          labelFormatter={(label: string) => new Date(label).toLocaleDateString('en-GB')}
                           wrapperStyle={chartTooltipWrapperStyle}
                           contentStyle={chartTooltipContentStyle}
                         />
