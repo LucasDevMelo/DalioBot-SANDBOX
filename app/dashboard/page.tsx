@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { NumericFormat } from 'react-number-format';
-import { getDatabase, ref, get } from 'firebase/database';
+import { getDatabase, ref, get } from 'firebase/database'
 import { useAuth } from '@/src/context/authcontext';
 import Topbar from '../../components/topbar';
 import Sidebar from '../../components/sidebar';
@@ -269,6 +269,7 @@ function DashboardContent() {
   // Todos os seus estados, useEffects, useMemos, e funções de cálculo permanecem aqui
   const [sidebarAberta, setSidebarAberta] = useState(false);
   const [csvData, setCsvData] = useState<CsvData[]>([]);
+  const [nomeRoboDisplay, setNomeRoboDisplay] = useState(''); // <--- ADICIONE ISSO
   const [carregandoDados, setCarregandoDados] = useState(true);
   const [abaAtiva, setAbaAtiva] = useState<Aba>('resultados');
   const [descricao, setDescricao] = useState('');
@@ -537,6 +538,7 @@ function DashboardContent() {
           const data = snapshot.val();
 
           // --- 1. SET MÉTRICAS DESCRITIVAS ---
+          setNomeRoboDisplay(data.nome || '');
           setDescricao(data.descricao || '');
           setMercado(data.mercado || '');
           setAtivo(data.ativo || '');
@@ -1015,8 +1017,7 @@ function DashboardContent() {
         <main className="flex-1 p-4 lg:p-8 bg-slate-900 overflow-y-auto">
           <Card className="mb-6 bg-slate-800 border-slate-700">
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <CardTitle className="text-white">{roboNome || "Dashboard"}</CardTitle>
-              <button
+              <CardTitle className="text-white">{nomeRoboDisplay || roboNome || "Dashboard"}</CardTitle>              <button
                 onClick={() => setShowStatsPopup(true)}
                 className="bg-purple-600 text-white px-2 py-1 text-xs rounded hover:bg-purple-700 mt-2 md:mt-0 sm:px-1 sm:py-1 sm:text-xxs shadow-[0_0_15px_theme(colors.purple.500/40)]"
               >

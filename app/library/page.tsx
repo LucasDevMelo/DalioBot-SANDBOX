@@ -21,6 +21,7 @@ interface ProcessedCsvRow {
 
 interface RoboData {
   id: string;
+  nome: string; // <--- 1. ADICIONADO: Campo nome na interface
   ativo: string;
   tipo: string;
   score: number;
@@ -64,7 +65,8 @@ const RoboCard = ({ robo }: RoboCardProps) => {
       className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden flex flex-col shadow-lg hover:shadow-purple-500/10 transition-all"
     >
       <CardHeader className="p-4 border-b border-slate-700">
-        <CardTitle className="text-white text-lg font-semibold">{robo.id}</CardTitle>
+        {/* 2. ALTERADO: De robo.id para robo.nome */}
+        <CardTitle className="text-white text-lg font-semibold">{robo.nome}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col flex-grow p-4">
         <div className="grid grid-cols-3 gap-x-2 gap-y-4 mb-4">
@@ -121,6 +123,7 @@ function BibliotecaContent() {
   const [sidebarAberta, setSidebarAberta] = useState(false);
 
   const calculateRoboSummary = (dadosCSV: any) => {
+    // ... (mesma lógica de cálculo anterior mantida aqui para brevidade)
     const csvData: ProcessedCsvRow[] = Object.values(dadosCSV)
       .map((row: any) => ({
         EQUITY: parseFloat(String(row['<EQUITY>'] || row.EQUITY || 0).replace(',', '.')),
@@ -149,7 +152,7 @@ function BibliotecaContent() {
       equityPorDia.set(new Date(row.DATE).toISOString().split('T')[0], row.EQUITY);
     });
     const datasUnicas = Array.from(equityPorDia.keys()).sort();
-    const lucroDiarioConsolidado = datasUnicas.slice(1).map((d, i) => 
+    const lucroDiarioConsolidado = datasUnicas.slice(1).map((d, i) =>
       (equityPorDia.get(d) ?? 0) - (equityPorDia.get(datasUnicas[i]) ?? 0)
     );
     const gains = lucroDiarioConsolidado.filter(v => v > 0);
@@ -195,14 +198,25 @@ function BibliotecaContent() {
             .map(([id, robo]: [string, any]) => {
               if (robo.dadosCSV) {
                 const { metrics, equityCurve } = calculateRoboSummary(robo.dadosCSV);
+
+                const finalMaxDD = (robo.drawdown !== undefined && robo.drawdown !== null)
+                  ? Math.abs(robo.drawdown)
+                  : metrics.drawdownMaximo;
+
+                const finalTaxaAcerto = (robo.taxaAcerto !== undefined && robo.taxaAcerto !== null)
+                  ? robo.taxaAcerto
+                  : metrics.taxaAcerto;
+
                 return {
                   id,
+                  // 3. ADICIONADO: Puxa o 'nome' do banco, ou usa o ID como fallback
+                  nome: robo.nome || id,
                   ativo: robo.ativo || 'N/A',
                   tipo: robo.mercado || 'N/A',
                   score: metrics.score,
                   fatorLucro: metrics.fatorLucro,
-                  drawdownMaximo: metrics.drawdownMaximo,
-                  taxaAcerto: metrics.taxaAcerto,
+                  drawdownMaximo: finalMaxDD,
+                  taxaAcerto: finalTaxaAcerto,
                   equityCurve,
                 };
               }
@@ -220,21 +234,19 @@ function BibliotecaContent() {
     fetchRobos();
   }, [user]);
 
+  // Render do componente (sem alterações necessárias, apenas o RoboCard que já foi alterado)
   return (
     <div className="min-h-screen flex flex-col bg-slate-900 text-gray-200">
       <Topbar />
-
       <div className="md:hidden p-2 bg-slate-800/50 border-b border-slate-700 shadow z-40">
         <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-400 p-2 font-bold text-xl">
           ☰
         </button>
       </div>
-
       <div className="flex flex-1 overflow-hidden">
         <div className={`absolute md:static z-50 transition-transform duration-300 transform bg-slate-900 border-r border-slate-800 shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
           <Sidebar />
         </div>
-
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -246,9 +258,7 @@ function BibliotecaContent() {
             {robos.length === 0 ? (
               <div className="text-center p-8 bg-slate-800/50 border border-slate-700 rounded-2xl">
                 <h2 className="text-xl font-semibold text-white mb-2">No Robots Found</h2>
-                <p className="text-gray-400 mb-4">
-                  It seems you haven't added any robots yet.
-                </p>
+                <p className="text-gray-400 mb-4">It seems you haven't added any robots yet.</p>
                 <Link href="/robots" className="text-purple-400 hover:underline font-semibold">
                   Go to the robots page
                 </Link>
@@ -267,9 +277,7 @@ function BibliotecaContent() {
   );
 }
 
-// =============================================================
-// CONTAINER COM SUSPENSE
-// =============================================================
+// Container Principal
 export default function BibliotecaPageContainer() {
   return (
     <Suspense fallback={
