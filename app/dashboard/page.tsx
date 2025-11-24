@@ -467,11 +467,48 @@ function DashboardContent() {
       },
     });
 
-    const scoreCalculado = Math.min(10, Math.max(0, (cagrCalculado * 100) / 5));
-    setDaliobotScore(Number(scoreCalculado.toFixed(2)));
+    const maxDDPercentual = drawdownsPercentuaisCalculados.length > 0
+      ? Math.max(...drawdownsPercentuaisCalculados)
+      : 0;
 
+    // 1. CÁLCULO DO RISCO (DRAWDOWN)
+    // Pegamos o pior drawdown histórico (ex: -0.25). Convertemos para positivo (0.25).
+    const piorDD = drawdownsPercentuaisCalculados.length > 0
+      ? Math.min(...drawdownsPercentuaisCalculados)
+      : 0;
+    const maxDDAbsoluto = Math.abs(piorDD);
+
+    // 2. SUB-SCORE DE RETORNO (Peso 35%)
+    // Meta ajustada: 50% de CAGR anual já garante nota 10 (antes era 60%).
+    // Ex: CAGR 0.25 (25%) -> Nota 5.0
+    const notaRetorno = Math.min(10, Math.max(0, (cagrCalculado * 100) / 5));
+
+    // 3. SUB-SCORE DE RISCO (Peso 45%) - Ajustado para ser menos punitivo
+    // Antes multiplicava por 33 (30% DD zerava a nota).
+    // Agora multiplica por 20 (50% DD zera a nota).
+    // Ex: Drawdown de 20% (0.20) -> 10 - (0.20 * 20) = 10 - 4 = Nota 6.0 (Razoável)
+    // Ex: Drawdown de 10% (0.10) -> 10 - (0.10 * 20) = 10 - 2 = Nota 8.0 (Bom)
+    const notaRisco = Math.max(0, 10 - (maxDDAbsoluto * 20));
+
+    // 4. SUB-SCORE DE ESTABILIDADE (Peso 20%) - Sharpe Simplificado
+    // Aumentamos o multiplicador de 66 para 100 para valorizar mais curvas estáveis.
+    // Sharpe diário de 0.1 (excelente) agora dá nota 10.
+    const sharpeDiario = dpRetornosDiarios > 0 ? (mediaRetornosDiarios / dpRetornosDiarios) : 0;
+    const notaEstabilidade = Math.min(10, Math.max(0, sharpeDiario * 100));
+
+    // 5. CÁLCULO FINAL PONDERADO
+    // Pesos ajustados: 35% Retorno | 45% Risco | 20% Estabilidade
+    // Damos leve prioridade ao risco (Dalio style), mas sem destruir a nota.
+    const scoreFinal = (notaRetorno * 0.35) + (notaRisco * 0.45) + (notaEstabilidade * 0.20);
+
+    // Garante que fique entre 0 e 10
+    setDaliobotScore(Math.min(10, Math.max(0, Number(scoreFinal.toFixed(2)))));
+
+    // Fator de Dalio (Informativo)
     const fatorCalculado = mediaRetornosDiarios / (dpRetornosDiarios || 1e-9);
     setDaliobotFactor(Number(fatorCalculado.toFixed(2)));
+
+    
 
   }, [csvData, saldoInicial]);
 
@@ -1429,26 +1466,7 @@ function DashboardContent() {
               {/* CONTEÚDO DA ABA MÉTRICAS AVANÇADAS */}
               {abaAtiva === 'metricasAvancadas' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="md:col-span-3 bg-slate-800 border-slate-700"> {/* Saldo Inicial */}
-                    <CardHeader> <CardTitle className="text-white text-base font-medium">Set Beginning Balance for Calculations</CardTitle> </CardHeader>
-                    <CardContent className="flex flex-col md:flex-row items-center gap-4">
-                      <NumericFormat
-                        value={saldoInicial}
-                        onValueChange={(values) => setSaldoInicial(values.floatValue || 0)}
-                        thousandSeparator="." decimalSeparator="," prefix="$ "
-                        allowNegative={false} decimalScale={2} fixedDecimalScale
-                        className="bg-slate-700 border border-slate-600 text-gray-200 rounded-lg p-2 w-full md:w-1/3 focus:ring-purple-500 focus:border-purple-500"
-                        placeholder="Enter the initial balance"
-                      />
-                      <button
-                        onClick={calcularMetricasDependentes}
-                        className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 shadow-[0_0_15px_theme(colors.purple.500/40)]"
-                        disabled={csvData.length === 0}
-                      >
-                        Apply Balance and Recalculate
-                      </button>
-                    </CardContent>
-                  </Card>
+                
                   <Card className="flex items-center p-4 bg-slate-800 border-slate-700"> {/* CAGR */}
                     <img
                       src="/graph.png"
