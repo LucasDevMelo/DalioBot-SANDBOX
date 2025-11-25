@@ -436,7 +436,8 @@ export default function HomePage() {
 
         {/* STEPS SECTION */}
         <section className="py-24 relative z-10">
-          <div className="absolute inset-0 bg-slate-900/50 skew-y-3 transform-gpu -z-10 border-y border-white/5"></div>
+          {/* AQUI: Removido 'skew-y-3' e 'transform-gpu' para tirar a diagonal */}
+          <div className="absolute inset-0 bg-slate-900/50 -z-10 border-y border-white/5"></div>
           
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
