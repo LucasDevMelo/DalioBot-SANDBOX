@@ -275,7 +275,7 @@ export default function HomePage() {
                   </span>
                 </h1>
                 <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto lg:mx-0 mb-10">
-                    Professional-grade backtesting analysis and portfolio simulations, simplified for individual investors. Get <span className="text-purple-400 font-semibold">1 month free access</span> during our beta.
+                    Professional-grade backtesting analysis and portfolio simulations, simplified for individual investors. Get <span className="text-purple-400 font-semibold"> free access</span> during our beta.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
@@ -524,7 +524,7 @@ export default function HomePage() {
               Ready to <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 drop-shadow-[0_0_20px_rgba(192,132,252,0.4)]">evolve?</span>
             </h2>
             <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed" style={{ transform: "translateZ(20px)" }}>
-              Join the Beta today. 100% Free for the first month. <br/>
+              Join the Beta today. 100% free access during our beta. 
               Professionalize your trading setup now.
             </p>
             <div style={{ transform: "translateZ(50px)" }}>
@@ -636,29 +636,29 @@ export default function HomePage() {
         </Modal>
       )}
 
-      {/* Contact Modal */}
+       {/* Contact Modal */}
       {activeModal === 'contact' && (
-        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md perspective-1000">
           <motion.div
-            className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl shadow-purple-900/20 max-w-sm w-full text-center"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="bg-slate-900/90 border border-slate-700/80 p-8 rounded-3xl shadow-2xl shadow-purple-900/30 max-w-sm w-full text-center transform-gpu relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.8, rotateX: 30, y: 50 }}
+            animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 150, damping: 15 }}
           >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white flex-grow text-center">Contact</h2>
-              <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white text-2xl leading-none absolute top-4 right-4">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"></div>
+            <div className="flex justify-between items-center mb-6 mt-2">
+              <h2 className="text-2xl font-bold text-white flex-grow text-center">Contact Us</h2>
+              <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white text-2xl leading-none absolute top-6 right-6 transition-colors">
                 <FaTimes />
               </button>
             </div>
-            <div className="text-gray-300 space-y-4">
-              <p>For questions, support or other issues, please contact us via email:</p>
-              <div className="font-semibold text-purple-300 bg-purple-500/10 p-3 rounded-lg border border-purple-500/20 break-all">
-                daliobot@gmail.com
+            <div className="text-gray-300 space-y-6 relative z-10">
+              <p className="text-lg">Questions or support?</p>
+              <div className="font-mono text-xl text-purple-300 bg-purple-500/10 p-5 rounded-2xl border border-purple-500/30 break-all select-all shadow-[inset_0_0_20px_rgba(168,85,247,0.1)] flex items-center justify-center gap-3 group hover:bg-purple-500/20 transition-colors cursor-pointer">
+                <FaLink className="text-purple-500 group-hover:rotate-45 transition-transform"/> daliobot@gmail.com
               </div>
-            </div>
-            <div className="mt-6">
-              <button onClick={() => setActiveModal(null)} className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold w-full">Close</button>
+              <p className="text-sm text-slate-500">We usually reply within 24 hours.</p>
             </div>
           </motion.div>
         </div>
