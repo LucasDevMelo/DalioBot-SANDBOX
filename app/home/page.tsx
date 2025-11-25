@@ -359,7 +359,7 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-40">
-              {/* Feature 1 */}
+              {/* Feature 1 - Unified Portfolio Command */}
               <AnimatedSection>
                 <div className="grid md:grid-cols-2 gap-16 items-center transform-style-3d">
                   <div className="order-2 md:order-1" style={{ transform: "translateZ(30px)" }}>
@@ -380,8 +380,9 @@ export default function HomePage() {
                   </div>
                   <div className="order-1 md:order-2 relative group perspective-[1500px] z-10">
                     <div className="absolute -inset-4 bg-gradient-to-r from-purple-600/30 to-blue-600/30 rounded-3xl blur-2xl group-hover:opacity-100 transition duration-700 opacity-0 -z-10 transform translate-z-[-50px]"></div>
+                    {/* AQUI FOI ALTERADO: rotateY de -15 para 15 */}
                     <motion.div 
-                        whileHover={{ rotateY: -15, rotateX: 10, scale: 1.05 }} 
+                        whileHover={{ rotateY: 15, rotateX: 10, scale: 1.05 }} 
                         transition={{ type: "spring", stiffness: 100, damping: 20 }} 
                         style={{ transformStyle: "preserve-3d" }}
                         className="shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] rounded-xl"
@@ -394,13 +395,14 @@ export default function HomePage() {
                 </div>
               </AnimatedSection>
 
-              {/* Feature 2 */}
+              {/* Feature 2 - Monte Carlo Simulations */}
               <AnimatedSection>
                 <div className="grid md:grid-cols-2 gap-16 items-center transform-style-3d">
                   <div className="relative group perspective-[1500px] z-10">
                     <div className="absolute -inset-4 bg-gradient-to-r from-fuchsia-600/30 to-purple-600/30 rounded-3xl blur-2xl group-hover:opacity-100 transition duration-700 opacity-0 -z-10 transform translate-z-[-50px]"></div>
+                     {/* AQUI FOI ALTERADO: rotateY de 15 para -15 */}
                      <motion.div 
-                        whileHover={{ rotateY: 15, rotateX: 10, scale: 1.05 }} 
+                        whileHover={{ rotateY: -15, rotateX: 10, scale: 1.05 }} 
                         transition={{ type: "spring", stiffness: 100, damping: 20 }} 
                         style={{ transformStyle: "preserve-3d" }}
                         className="shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] rounded-xl"
@@ -581,49 +583,81 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* MODALS (Termos, Privacidade, Reembolso) */}
+      {/* MODALS COM TEXTO COMPLETO */}
+
+      {/* Terms Modal */}
       {activeModal === 'terms' && (
         <Modal title="Terms of Service" closeModal={closeModal}>
-          <p className="text-slate-300">Please carefully read the terms and conditions set out below...</p>
-          {/* Conteúdo mantido */}
+          <p>Please carefully read the terms and conditions set out below (“Terms of Use”) so that you can enjoy our platform and all the services available through it, all of which are the exclusive property of the website www.daliobot.com.br. By using the platform, our products and/or services, including our content made available through the Platform, you are agreeing to these Terms of Use. If you do not agree, we ask that you do not use our products and/or services, as your use represents your full acceptance of these Terms of Use.</p>
+          <p>Tolerance regarding the non-compliance with any obligation set forth in the Platform's Terms of Use will not signify a waiver of the right to demand compliance with the obligation, nor an alteration of any term or condition contained herein.</p>
+          <p>For a better experience for its Users, DalioBot may, from time to time, partially or fully change the Terms of Use. But, of course: in the event of a change, you will be informed when you access the platform again, whether logged in or not, and the user will be required to accept the Terms of Use again. In the specific case of processing personal data or sensitive data, you will be fully informed about any and all actions taken in this regard, providing prior consent whenever necessary. If you do not agree with the changes we have made, you can cancel your account and cease any and all use of the products and services.</p>
+          <ol className="list-decimal list-inside space-y-3 mt-4 pl-2 text-slate-400">
+            <li>The history of profitability or analysis is not a guarantee of future returns. The variable income market involves risks and is subject to various eventualities and external effects that involve unpredictability and, thus, financial risks. Furthermore, results may vary from person to person, according to the operations carried out by each individual.</li>
+            <li>The "DalioBot" website is not responsible for any type of financial transaction between the user and the developer/company that is marketing the robot. We only connect investors and validated automated strategies. The entire hiring process is done directly between the person responsible for the strategy and the user.</li>
+            <li>The statistical data of all robots are provided directly by the developer. Therefore, the accuracy of the information is their sole responsibility.</li>
+            <li>By registering a robot, you agree that the data contained in the import CSV has not been manipulated.</li>
+            <li>The site offers no warranty linked to the Platform, and its use, and is not responsible for any damages or losses resulting from its use. The use of the Platform and the disclosed robots is the sole responsibility of the user, who must use their own knowledge and techniques to decide on their investments.</li>
+          </ol>
+          <p className="font-bold text-white mt-4">Using the Beta Version:</p>
+          <p>This version of the platform is a free beta, offered for a limited time to test its features. All features are provided "as is" and may contain bugs or be subject to changes. The DalioBot website is not responsible, under any circumstances, for any damage or loss, material or moral, related to the use of the platform during the beta period.</p>
+          <p>The "Payment Processing" and pricing sections are not applicable to the Beta Version. However, please read our general terms of use, as they apply to the use of all our services.</p>
         </Modal>
       )}
 
+      {/* Privacy Modal */}
       {activeModal === 'privacy' && (
         <Modal title="Privacy Policy" closeModal={closeModal}>
-          <p className="text-slate-300">Welcome to DalioBot! Your privacy is critically important to us...</p>
+          <p>Welcome to DalioBot! Your privacy is critically important to us. This Privacy Policy outlines how we collect, use, store, share, and protect your information when you use our platform.</p>
+          <h3 className="text-md font-semibold text-white pt-2">1. Data We Collect</h3>
+          <ul className="list-disc list-inside space-y-2 text-slate-400">
+            <li><strong>Account Information:</strong> When you register, we collect your name, email address, and a hashed password.</li>
+            <li><strong>Backtest and Portfolio Data:</strong> We store all data from your uploaded `.csv` files and the portfolios you create. This sensitive data is used solely to provide you with analysis within your account and is never shared.</li>
+            <li><strong>Usage Data:</strong> We automatically collect technical and usage data to improve our service.</li>
+          </ul>
+          <h3 className="text-md font-semibold text-white pt-2">2. How We Use Your Data</h3>
+          <p>We use your data to provide and maintain the service, improve the platform, communicate with you, ensure security, and process payments.</p>
+          <h3 className="text-md font-semibold text-white pt-2">3. Data Sharing</h3>
+          <p>We do not sell your personal information. We only share data with essential partners for platform operation, such as cloud infrastructure providers (Firebase/Google Cloud) and payment processors, under strict confidentiality agreements.</p>
+          <h3 className="text-md font-semibold text-white pt-2">4. Your Rights</h3>
+          <p>In accordance with data protection laws like LGPD, you have the right to access, correct, delete, or transfer your data, and revoke consent. To exercise your rights, please contact us.</p>
+          <h3 className="text-md font-semibold text-white pt-2">5. Contact Us</h3>
+          <p>If you have any questions about this Privacy Policy, please contact us at: <span className="font-medium text-purple-400">daliobot@gmail.com</span></p>
         </Modal>
       )}
 
+      {/* Refund Modal */}
       {activeModal === 'refund' && (
         <Modal title="Refund Policy" closeModal={closeModal}>
-          <p className="text-slate-300">At DalioBot, we want you to be completely satisfied with your purchase...</p>
+          <p>At DalioBot, we want you to be completely satisfied with your purchase. We offer a 14-day money-back guarantee for all our plans.</p>
+          <p>If for any reason you are not satisfied with our service within the first 14 days of your initial subscription (monthly or annual), please contact us at <span className="font-medium text-purple-400">daliobot@gmail.com</span> to request a full refund.</p>
+          <p>For the "Founder's Pack" (Lifetime Subscription), the period for a refund request is also 14 days from the date of purchase.</p>
+          <p>Please note that refunds are processed through our payment partner, Paddle.com, and may take 5-10 business days to appear on your statement.</p>
         </Modal>
       )}
 
       {/* Contact Modal */}
       {activeModal === 'contact' && (
-        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md perspective-1000">
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
           <motion.div
-            className="bg-slate-900/90 border border-slate-700/80 p-8 rounded-3xl shadow-2xl shadow-purple-900/30 max-w-sm w-full text-center transform-gpu relative overflow-hidden"
-            initial={{ opacity: 0, scale: 0.8, rotateX: 30, y: 50 }}
-            animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: "spring", stiffness: 150, damping: 15 }}
+            className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl shadow-purple-900/20 max-w-sm w-full text-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"></div>
-            <div className="flex justify-between items-center mb-6 mt-2">
-              <h2 className="text-2xl font-bold text-white flex-grow text-center">Contact Us</h2>
-              <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white text-2xl leading-none absolute top-6 right-6 transition-colors">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white flex-grow text-center">Contact</h2>
+              <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white text-2xl leading-none absolute top-4 right-4">
                 <FaTimes />
               </button>
             </div>
-            <div className="text-gray-300 space-y-6 relative z-10">
-              <p className="text-lg">Questions or support?</p>
-              <div className="font-mono text-xl text-purple-300 bg-purple-500/10 p-5 rounded-2xl border border-purple-500/30 break-all select-all shadow-[inset_0_0_20px_rgba(168,85,247,0.1)] flex items-center justify-center gap-3 group hover:bg-purple-500/20 transition-colors cursor-pointer">
-                <FaLink className="text-purple-500 group-hover:rotate-45 transition-transform"/> daliobot@gmail.com
+            <div className="text-gray-300 space-y-4">
+              <p>For questions, support or other issues, please contact us via email:</p>
+              <div className="font-semibold text-purple-300 bg-purple-500/10 p-3 rounded-lg border border-purple-500/20 break-all">
+                daliobot@gmail.com
               </div>
-              <p className="text-sm text-slate-500">We usually reply within 24 hours.</p>
+            </div>
+            <div className="mt-6">
+              <button onClick={() => setActiveModal(null)} className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold w-full">Close</button>
             </div>
           </motion.div>
         </div>
@@ -632,21 +666,17 @@ export default function HomePage() {
       {/* COOKIE CONSENT */}
       {showCookieConsent && (
         <motion.div
-          className="fixed inset-x-0 bottom-0 z-[100] p-6 bg-slate-900/80 border-t border-slate-700/50 backdrop-blur-xl text-white shadow-[0_-20px_60px_-10px_rgba(0,0,0,0.8)] perspective-1000"
-          initial={{ y: 150, rotateX: -20 }}
-          animate={{ y: 0, rotateX: 0 }}
-          transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+          className="fixed inset-x-0 bottom-0 z-[100] p-4 bg-slate-900/95 border-t border-slate-700 backdrop-blur-md text-white shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 30 }}
         >
-          <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-6 max-w-5xl transform-style-3d">
-             <div className="flex items-center gap-4">
-                <div className="p-3 bg-purple-500/20 rounded-full hidden md:block"><FaShieldAlt className="text-purple-400 text-xl"/></div>
-                <p className="text-base text-gray-300 text-center md:text-left leading-relaxed">
-                We use cookies to enhance your 3D experience. By continuing, you agree to our <button onClick={() => setActiveModal('privacy')} className="underline font-bold text-purple-300 hover:text-purple-200 transition-colors">Privacy Policy</button>.
-                </p>
-            </div>
-            <button onClick={handleAcceptCookies} className="w-full md:w-auto flex-shrink-0 bg-white text-slate-900 text-base font-bold px-10 py-4 rounded-xl hover:bg-purple-100 hover:shadow-[0_0_30px_rgba(192,132,252,0.5)] transition-all hover:scale-105 active:scale-95 relative overflow-hidden group">
-               <span className="relative z-10">Accept & Close</span>
-               <div className="absolute inset-0 bg-gradient-to-r from-purple-200 to-white opacity-0 group-hover:opacity-30 transition-opacity"></div>
+          <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-gray-300 text-center md:text-left">
+              We use cookies to improve your experience. By continuing to use our website, you agree to our <button onClick={() => setActiveModal('privacy')} className="underline font-semibold text-purple-400 hover:text-purple-300">Privacy Policy</button>.
+            </p>
+            <button onClick={handleAcceptCookies} className="w-full md:w-auto flex-shrink-0 bg-purple-600 text-white text-sm font-semibold px-8 py-3 rounded-lg hover:bg-purple-700 hover:shadow-[0_0_15px_rgba(192,132,252,0.4)] transition-all">
+              Got it!
             </button>
           </div>
         </motion.div>
