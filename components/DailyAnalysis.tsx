@@ -643,7 +643,8 @@ const DailyAnalysis: React.FC<Props> = ({ csvData, roboId, roboMetrics }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Gráfico de Retorno Mensal */}
           <div className="bg-slate-800 p-4 rounded-2xl border border-slate-700 lg:col-span-1">
-            <h3 className="font-semibold mb-2 text-white">Barras - Resultado Diário</h3>
+            <h3 className="font-semibold mb-2 text-white">Bars - Daily Result
+            </h3>
             <div style={{ height: 220 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
