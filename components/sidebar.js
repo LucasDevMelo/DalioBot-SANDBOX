@@ -61,6 +61,7 @@ export default function Sidebar() {
         <SidebarItem label="Consistency Analysis" href="/analise" icon={<AnalysisIcon />} isBetaAvailable={false} />
         <SidebarItem label="Portfolios" href="/portfolios" icon={<PortfolioIcon />} />
         <SidebarItem label="Portfolio Optimizer" href="/optimizer" icon={<OptimizerIcon />} isBetaAvailable={false} />
+        <SidebarItem label="Account Settings" href="/settings" icon={<OptimizerIcon />} />
       </nav>
 
       <div className="border-t border-slate-800 pt-4">
