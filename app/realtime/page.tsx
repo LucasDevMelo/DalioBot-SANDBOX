@@ -18,7 +18,7 @@ export default function RealTimeAnalysis() {
   useEffect(() => {
     if (!user) return;
 
-    // 1. Mapeia Magic Numbers para nomes cadastrados em Account Settings
+    // 1. Map Magic Numbers to Robot Names
     onValue(ref(realtimeDB, `users/${user.uid}/mt5_accounts`), (snap) => {
       const val = snap.val();
       if (val) {
@@ -28,13 +28,12 @@ export default function RealTimeAnalysis() {
       }
     });
 
-    // 2. Escuta dados em tempo real do EA
+    // 2. Listen to Real-time data from EA
     const analysisRef = ref(realtimeDB, `analysis/${user.uid}`);
     const unsubscribe = onValue(analysisRef, (snapshot) => {
       const val = snapshot.val();
       if (val) {
         setData(val);
-        // Atualiza histórico do gráfico se houver mudança na Equity
         if (val.metrics?.equity) {
           setHistoryData(prev => {
             const newPoint = { time: new Date().toLocaleTimeString(), equity: val.metrics.equity };
@@ -51,7 +50,7 @@ export default function RealTimeAnalysis() {
   const positions = data?.positions || [];
   const hasActivityToday = metrics?.closedTrades > 0 || metrics?.profit !== 0;
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Carregando...</div>;
+  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
 
   return (
     <div className="flex h-screen bg-slate-950 text-gray-200">
@@ -60,22 +59,22 @@ export default function RealTimeAnalysis() {
         <Topbar />
         <main className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white">Monitoramento em Tempo Real</h1>
+            <h1 className="text-2xl font-bold text-white">Real-Time Monitoring</h1>
             <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-3 py-1 rounded-full border border-emerald-500/20 animate-pulse">LIVE DATA</span>
           </div>
 
-          {/* Métricas Principais */}
+          {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard title="Equity Total" value={`$ ${metrics?.equity?.toLocaleString() || '0.00'}`} color="text-white" />
-            <StatCard title="Resultado (Hoje)" value={`$ ${metrics?.profit?.toLocaleString() || '0.00'}`} color={metrics?.profit >= 0 ? "text-emerald-400" : "text-red-400"} />
+            <StatCard title="Total Equity" value={`$ ${metrics?.equity?.toLocaleString() || '0.00'}`} color="text-white" />
+            <StatCard title="Result (Today)" value={`$ ${metrics?.profit?.toLocaleString() || '0.00'}`} color={metrics?.profit >= 0 ? "text-emerald-400" : "text-red-400"} />
             <StatCard title="Win Rate" value={`${metrics?.winRate?.toFixed(1) || '0'}%`} color="text-purple-400" />
             <StatCard title="Drawdown" value={`${metrics?.drawdown?.toFixed(2) || '0.00'}%`} color="text-orange-400" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Gráfico Curva de Capital (Condicional) */}
+            {/* Capital Curve Chart */}
             <Card className="lg:col-span-2 bg-slate-900 border-slate-800">
-              <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Curva de Capital (Hoje)</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Capital Curve (Today)</CardTitle></CardHeader>
               <CardContent className="h-[280px]">
                 {hasActivityToday ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -95,40 +94,40 @@ export default function RealTimeAnalysis() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-600">
-                    <p className="text-sm">Aguardando primeira operação para gerar gráfico...</p>
+                    <p className="text-sm">Waiting for first trade to generate chart...</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Resumo de Atividade */}
+            {/* Activity Summary */}
             <Card className="bg-slate-900 border-slate-800">
-              <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Resumo de Atividade</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Activity Summary</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <ActivityRow label="Trades Abertos" value={metrics?.openTrades || 0} />
-                <ActivityRow label="Trades Fechados" value={metrics?.closedTrades || 0} />
-                <ActivityRow label="Fator de Lucro" value={metrics?.profitFactor?.toFixed(2) || '0.00'} isPurple />
+                <ActivityRow label="Open Trades" value={metrics?.openTrades || 0} />
+                <ActivityRow label="Closed Trades" value={metrics?.closedTrades || 0} />
+                <ActivityRow label="Profit Factor" value={metrics?.profitFactor?.toFixed(2) || '0.00'} isPurple />
                 <div className="pt-4 border-t border-slate-800 mt-4">
                   <p className="text-[10px] text-gray-500 leading-relaxed italic">
-                    Dados processados diretamente do MetaTrader 5 via DalioBot Bridge.
+                    Data processed directly from MetaTrader 5 via DalioBot Bridge.
                   </p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Tabela de Operações Abertas */}
+          {/* Open Positions Table */}
           <Card className="bg-slate-900 border-slate-800">
-            <CardHeader><CardTitle className="text-lg text-white font-bold">Operações em Aberto</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg text-white font-bold">Open Positions</CardTitle></CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="text-gray-500 border-b border-slate-800">
                     <tr>
-                      <th className="pb-3">Robô</th><th className="pb-3">Ativo</th>
-                      <th className="pb-3">Vol</th><th className="pb-3">Entrada</th>
-                      <th className="pb-3">Alvo (TP)</th><th className="pb-3">Tipo</th>
-                      <th className="pb-3">Progresso</th>
+                      <th className="pb-3">Robot</th><th className="pb-3">Asset</th>
+                      <th className="pb-3">Vol</th><th className="pb-3">Entry</th>
+                      <th className="pb-3">Target (TP)</th><th className="pb-3">Type</th>
+                      <th className="pb-3">Progress</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/50">
@@ -146,12 +145,12 @@ export default function RealTimeAnalysis() {
                           <div className="h-1.5 w-full bg-slate-800 rounded-full mb-1">
                             <div className="h-1.5 bg-purple-500 rounded-full" style={{ width: `${Math.min(p.prog, 100)}%` }}></div>
                           </div>
-                          <span className="text-[9px] text-gray-500 uppercase">{p.prog?.toFixed(1)}% para o alvo</span>
+                          <span className="text-[9px] text-gray-500 uppercase">{p.prog?.toFixed(1)}% to target</span>
                         </td>
                       </tr>
                     ))}
                     {positions.length === 0 && (
-                       <tr><td colSpan={7} className="py-10 text-center text-gray-600">Nenhuma posição aberta no momento.</td></tr>
+                       <tr><td colSpan={7} className="py-10 text-center text-gray-600">No open positions at the moment.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -164,7 +163,6 @@ export default function RealTimeAnalysis() {
   );
 }
 
-// Componentes Auxiliares de UI
 function StatCard({ title, value, color }: any) {
   return (
     <Card className="bg-slate-900 border-slate-800 p-5">

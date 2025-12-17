@@ -3,19 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/src/context/authcontext';
 import { realtimeDB } from '@/src/firebase';
-import { ref, set, onValue, push } from 'firebase/database';
+import { ref, onValue, push } from 'firebase/database';
 import Sidebar from '@/components/sidebar';
 import Topbar from '@/components/topbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AccountSettings() {
   const { user } = useAuth();
-  const [accountNumber, setAccountNumber] = useState(''); // Novo estado
+  const [accountNumber, setAccountNumber] = useState('');
   const [magicNumber, setMagicNumber] = useState('');
   const [botName, setBotName] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
 
-  // Carregar contas salvas
+  // Load saved accounts
   useEffect(() => {
     if (!user) return;
     const accountRef = ref(realtimeDB, `users/${user.uid}/mt5_accounts`);
@@ -35,7 +35,7 @@ export default function AccountSettings() {
 
     const accountRef = ref(realtimeDB, `users/${user.uid}/mt5_accounts`);
     await push(accountRef, {
-      accountNumber, // Salva o número da conta
+      accountNumber,
       magicNumber,
       botName,
       createdAt: new Date().toISOString()
@@ -55,24 +55,24 @@ export default function AccountSettings() {
           <div className="max-w-5xl mx-auto space-y-8">
             <h1 className="text-3xl font-bold text-white">Account Settings</h1>
 
-            {/* Card de Configuração de Contas */}
+            {/* Account Configuration Card */}
             <Card className="bg-slate-900 border-slate-800">
               <CardHeader>
-                <CardTitle className="text-xl text-white">Configuração de Robôs (MT5)</CardTitle>
-                <p className="text-sm text-gray-400">Vincule seus robôs do MetaTrader usando o número da conta e Magic Number.</p>
+                <CardTitle className="text-xl text-white">Robot Configuration (MT5)</CardTitle>
+                <p className="text-sm text-gray-400">Link your MetaTrader robots using the Account Number and Magic Number.</p>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAddAccount} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <input
                     type="text"
-                    placeholder="Nº da Conta"
+                    placeholder="Account No."
                     className="bg-slate-800 border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
                   />
                   <input
                     type="text"
-                    placeholder="Nome do Robô"
+                    placeholder="Robot Name"
                     className="bg-slate-800 border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                     value={botName}
                     onChange={(e) => setBotName(e.target.value)}
@@ -85,7 +85,7 @@ export default function AccountSettings() {
                     onChange={(e) => setMagicNumber(e.target.value)}
                   />
                   <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Adicionar
+                    Add Robot
                   </button>
                 </form>
 
@@ -93,8 +93,8 @@ export default function AccountSettings() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-slate-800">
-                        <th className="py-3 px-2 text-gray-400 font-medium">Nº Conta</th>
-                        <th className="py-3 px-2 text-gray-400 font-medium">Nome Robô</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">Account No.</th>
+                        <th className="py-3 px-2 text-gray-400 font-medium">Robot Name</th>
                         <th className="py-3 px-2 text-gray-400 font-medium">Magic Number</th>
                         <th className="py-3 px-2 text-gray-400 font-medium text-right">Status</th>
                       </tr>
@@ -106,7 +106,7 @@ export default function AccountSettings() {
                           <td className="py-3 px-2 text-white">{acc.botName}</td>
                           <td className="py-3 px-2 text-purple-400 font-mono">{acc.magicNumber}</td>
                           <td className="py-3 px-2 text-right">
-                            <span className="bg-emerald-500/10 text-emerald-500 text-xs px-2 py-1 rounded-full">Ativo</span>
+                            <span className="bg-emerald-500/10 text-emerald-500 text-xs px-2 py-1 rounded-full">Active</span>
                           </td>
                         </tr>
                       ))}
@@ -116,17 +116,17 @@ export default function AccountSettings() {
               </CardContent>
             </Card>
 
-            {/* Card de Download do EA */}
+            {/* EA Download Card */}
             <Card className="bg-slate-900 border-slate-800 border-l-4 border-l-purple-500">
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-white mb-2">DalioBot Bridge EA</h3>
                     <p className="text-gray-400 text-sm">
-                      Baixe o Expert Advisor e instale-o no seu MetaTrader 5 para sincronizar os dados.
+                      Download the Expert Advisor and install it on your MetaTrader 5 to sync data.
                     </p>
                     <div className="mt-4 p-2 bg-slate-800 rounded border border-slate-700 inline-block">
-                      <span className="text-xs text-gray-500 block">Seu UID para configuração:</span>
+                      <span className="text-xs text-gray-500 block">Your UID for configuration:</span>
                       <code className="text-purple-400 font-bold">{user?.uid}</code>
                     </div>
                   </div>
@@ -135,7 +135,7 @@ export default function AccountSettings() {
                     download 
                     className="flex items-center gap-2 bg-white text-slate-900 hover:bg-gray-200 font-bold py-3 px-6 rounded-xl transition-all shadow-lg"
                   >
-                    Baixar Expert Advisor
+                    Download EA
                   </a>
                 </div>
               </CardContent>
