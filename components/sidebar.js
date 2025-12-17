@@ -21,20 +21,19 @@ const ProfileIcon = () => <Icon path="M17.982 18.725A7.488 7.488 0 0012 15.75a7.
 
 function SidebarItem({ label, href, icon, isBetaAvailable = true }) {
   const isFeatureNotAvailable = isBetaAvailable === false;
-  
+
   const content = (
-    <div className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
-        isFeatureNotAvailable
+    <div className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 ${isFeatureNotAvailable
         ? 'text-gray-500 cursor-not-allowed'
         : 'text-gray-300 hover:bg-slate-800 hover:text-white'
-    }`}>
-        {icon && <span className="mr-3 text-gray-400">{icon}</span>}
-        {label}
-        {isFeatureNotAvailable && (
-            <span className="ml-auto bg-purple-500/10 text-purple-400 text-xs font-semibold px-2 py-0.5 rounded-full">
-                Coming soon
-            </span>
-        )}
+      }`}>
+      {icon && <span className="mr-3 text-gray-400">{icon}</span>}
+      {label}
+      {isFeatureNotAvailable && (
+        <span className="ml-auto bg-purple-500/10 text-purple-400 text-xs font-semibold px-2 py-0.5 rounded-full">
+          Coming soon
+        </span>
+      )}
     </div>
   );
 
@@ -50,7 +49,12 @@ export default function Sidebar() {
     <aside className="w-64 h-full bg-slate-900 border-r border-slate-800 p-4 flex flex-col justify-between">
       <nav className="space-y-1">
         <SidebarItem label="Home" href="/welcome" icon={<HomeIcon />} />
-        <SidebarItem label="Add Robot" href="/add" icon={<AddIcon />} />
+        <SidebarItem
+          label="Live Analysis"
+          href="/realtime"
+          icon={<AnalysisIcon />}
+          isBetaAvailable={true} // Ative o acesso aqui
+        />        <SidebarItem label="Add Robot" href="/add" icon={<AddIcon />} />
         <SidebarItem label="My Robots" href="/robots" icon={<RobotIcon />} />
         <SidebarItem label="Setup Library" href="/library" icon={<LibraryIcon />} />
         <SidebarItem label="Monte Carlo Simulator" href="/montecarlo" icon={<MonteCarloIcon />} />
