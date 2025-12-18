@@ -36,7 +36,7 @@ export default function RealTimeAnalysis() {
         if (val.metrics?.equity) {
           setHistoryData(prev => {
             const newPoint = { time: new Date().toLocaleTimeString(), equity: val.metrics.equity };
-            return [...prev, newPoint].slice(-30); 
+            return [...prev, newPoint].slice(-30);
           });
         }
       }
@@ -56,13 +56,13 @@ export default function RealTimeAnalysis() {
       <Topbar />
       {/* Botão Mobile igual ao exemplo enviado */}
       <div className="md:hidden p-2 bg-slate-800/50 border-b border-slate-700 shadow z-40">
-          <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-400 font-bold text-xl p-2">☰</button>
+        <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-400 font-bold text-xl p-2">☰</button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar container seguindo o estilo do exemplo */}
         <div className={`fixed md:static z-50 transition-transform duration-300 transform bg-slate-900 border-r border-slate-800 shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-            <Sidebar />
+          <Sidebar />
         </div>
 
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
@@ -92,8 +92,8 @@ export default function RealTimeAnalysis() {
                       <AreaChart data={historyData}>
                         <defs>
                           <linearGradient id="colorEq" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -104,8 +104,8 @@ export default function RealTimeAnalysis() {
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-600">
-                      <p className="text-sm">Waiting for trades...</p>
+                    <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-gray-400">
+                      <p className="text-sm font-medium">No trades have been made today yet.</p>
                     </div>
                   )}
                 </CardContent>
