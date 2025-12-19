@@ -187,10 +187,16 @@ export default function RealTimeAnalysis() {
                             {botNames[String(p.magic)] || `Magic: ${p.magic}`}
                           </td>
                           <td className="py-4 text-white">{p.symbol}</td>
-                          <td className="py-4">{p.vol}</td>
-                          <td className="py-4">{p.entry}</td>
+                          
+                          {/* Adicionado 'text-white' nas colunas abaixo */}
+                          <td className="py-4 text-white">{p.vol}</td>
+                          <td className="py-4 text-white">{p.entry}</td>
+                          
                           <td className="py-4 text-emerald-500">{p.tp}</td>
-                          <td className="py-4 font-bold">{p.type === 0 ? "BUY" : "SELL"}</td>
+                          
+                          {/* Adicionado 'text-white' aqui também */}
+                          <td className="py-4 font-bold text-white">{p.type === 0 ? "BUY" : "SELL"}</td>
+                          
                           <td className="py-4 w-40">
                             <div className="h-1.5 w-full bg-slate-700 rounded-full mb-1">
                               <div className="h-1.5 bg-purple-500 rounded-full" style={{ width: `${Math.min(p.prog || 0, 100)}%` }}></div>
