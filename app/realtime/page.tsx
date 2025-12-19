@@ -157,6 +157,46 @@ export default function RealTimeAnalysis() {
                 </div>
               </CardContent>
             </Card>
+            <Card className="bg-slate-800/50 border-slate-700 rounded-2xl shadow-lg mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg text-white font-bold">Closed Trades (Today)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="text-gray-400 border-b border-slate-700">
+                      <tr>
+                        <th className="pb-3">Robot</th>
+                        <th className="pb-3">Asset</th>
+                        <th className="pb-3 text-emerald-500">Gains</th>
+                        <th className="pb-3 text-red-500">Loss</th>
+                        <th className="pb-3">Trades</th>
+                        <th className="pb-3">Net Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/50">
+                      {(data?.closedHistory || []).map((b: any, i: number) => (
+                        <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                          <td className="py-4 text-purple-400 font-bold">{botNames[b.magic] || `Magic: ${b.magic}`}</td>
+                          <td className="py-4 text-white">{b.symbol}</td>
+                          <td className="py-4 text-emerald-500">{b.gains}</td>
+                          <td className="py-4 text-red-500">{b.losses}</td>
+                          <td className="py-4 text-gray-300">{b.trades}</td>
+                          <td className={`py-4 font-bold ${b.net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            $ {b.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      ))}
+                      {(!data?.closedHistory || data.closedHistory.length === 0) && (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-gray-500 italic">No closed trades recorded today.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
