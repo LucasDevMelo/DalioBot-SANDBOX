@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/src/context/authcontext';
 import { realtimeDB } from '@/src/firebase';
 import { ref, onValue } from 'firebase/database';
@@ -11,33 +11,56 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function RealTimeAnalysis() {
   const { user, loading } = useAuth();
-  const [sidebarAberta, setSidebarAberta] = useState(false); // Estilo mobile do exemplo
+  const [sidebarAberta, setSidebarAberta] = useState(false);
   const [data, setData] = useState<any>(null);
   const [botNames, setBotNames] = useState<any>({});
   const [historyData, setHistoryData] = useState<any[]>([]);
 
+  // Referência para controlar a atualização apenas quando fechar trades
+  const lastClosedRef = useRef<number>(-1);
+
   useEffect(() => {
     if (!user) return;
 
+    // 1. Carrega nomes dos robôs
     onValue(ref(realtimeDB, `users/${user.uid}/mt5_accounts`), (snap) => {
       const val = snap.val();
       if (val) {
-        const mapping = {};
-        Object.values(val).forEach((b: any) => mapping[b.magicNumber] = b.botName);
+        const mapping: any = {};
+        Object.values(val).forEach((b: any) => mapping[String(b.magicNumber)] = b.botName);
         setBotNames(mapping);
       }
     });
 
+    // 2. Escuta dados em tempo real
     const analysisRef = ref(realtimeDB, `analysis/${user.uid}`);
     const unsubscribe = onValue(analysisRef, (snapshot) => {
       const val = snapshot.val();
       if (val) {
         setData(val);
-        if (val.metrics?.equity) {
-          setHistoryData(prev => {
-            const newPoint = { time: new Date().toLocaleTimeString(), equity: val.metrics.equity };
-            return [...prev, newPoint].slice(-30);
-          });
+
+        // --- LÓGICA INTELIGENTE DE DADOS ---
+        const currentClosedCount = val.metrics?.closedTrades || 0;
+        const currentProfit = val.metrics?.profit || 0;
+
+        // Atualiza apenas se houver novos fechamentos ou for a primeira carga
+        if (lastClosedRef.current === -1 || currentClosedCount > lastClosedRef.current) {
+            
+            setHistoryData(prev => {
+              const newPoint = { 
+                  time: new Date().toLocaleTimeString(), 
+                  profit: currentProfit 
+              };
+              
+              // Mantém o gráfico começando do ZERO para desenhar a curva corretamente
+              if (prev.length === 0) {
+                  return [{ time: 'Start', profit: 0 }, newPoint];
+              }
+
+              return [...prev, newPoint].slice(-50);
+            });
+            
+            lastClosedRef.current = currentClosedCount;
         }
       }
     });
@@ -47,26 +70,31 @@ export default function RealTimeAnalysis() {
 
   const metrics = data?.metrics;
   const positions = data?.positions || [];
-  const hasActivityToday = metrics?.closedTrades > 0 || metrics?.profit !== 0;
+  const closedHistory = data?.closedHistory || [];
+  
+  const hasActivityToday = closedHistory.length > 0 || (metrics?.profit !== 0);
 
   if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading...</div>;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900 text-gray-200">
       <Topbar />
-      {/* Botão Mobile igual ao exemplo enviado */}
+      
+      {/* Botão Mobile */}
       <div className="md:hidden p-2 bg-slate-800/50 border-b border-slate-700 shadow z-40">
         <button onClick={() => setSidebarAberta(!sidebarAberta)} className="text-purple-400 font-bold text-xl p-2">☰</button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar container seguindo o estilo do exemplo */}
+        {/* Sidebar */}
         <div className={`fixed md:static z-50 transition-transform duration-300 transform bg-slate-900 border-r border-slate-800 shadow-lg md:shadow-none h-full md:h-auto ${sidebarAberta ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
           <Sidebar />
         </div>
 
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-6xl mx-auto space-y-6">
+            
+            {/* Header */}
             <div className="flex justify-between items-center bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
               <div>
                 <h1 className="text-2xl font-bold text-white">Real-Time Monitoring</h1>
@@ -84,33 +112,50 @@ export default function RealTimeAnalysis() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* GRÁFICO: Visual Roxo (Restaurado) */}
               <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700 rounded-2xl shadow-lg">
-                <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Capital Curve (Today)</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Daily Result Curve (PnL)</CardTitle></CardHeader>
                 <CardContent className="h-[280px]">
                   {hasActivityToday ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={historyData}>
                         <defs>
-                          <linearGradient id="colorEq" x1="0" y1="0" x2="0" y2="1">
+                          {/* Gradiente Roxo Original */}
+                          <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
                             <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                        
                         <XAxis dataKey="time" hide />
-                        <YAxis hide domain={['auto', 'auto']} />
-                        <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px' }} />
-                        <Area type="monotone" dataKey="equity" stroke="#a855f7" fill="url(#colorEq)" strokeWidth={2} />
+                        <YAxis hide domain={['auto', 'auto']} /> 
+                        
+                        <Tooltip 
+                            contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px' }} 
+                            formatter={(value: number) => [`$ ${value.toFixed(2)}`, "Result"]}
+                        />
+                        
+                        {/* Area Roxa (#a855f7) igual ao original */}
+                        <Area 
+                            type="monotone" 
+                            dataKey="profit" 
+                            stroke="#a855f7" 
+                            fill="url(#colorProfit)" 
+                            strokeWidth={2} 
+                        />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-gray-400">
-                      <p className="text-sm font-medium">No trades have been made today yet.</p>
+                      <p className="text-sm font-medium">Waiting for closed trades...</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
+              {/* Activity Summary */}
               <Card className="bg-slate-800/50 border-slate-700 rounded-2xl shadow-lg">
                 <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Activity Summary</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -138,7 +183,9 @@ export default function RealTimeAnalysis() {
                     <tbody className="divide-y divide-slate-700/50">
                       {positions.map((p: any, i: number) => (
                         <tr key={i} className="hover:bg-slate-800/30 transition-colors">
-                          <td className="py-4 text-purple-400 font-bold">{botNames[p.magic] || `Magic: ${p.magic}`}</td>
+                          <td className="py-4 text-purple-400 font-bold">
+                            {botNames[String(p.magic)] || `Magic: ${p.magic}`}
+                          </td>
                           <td className="py-4 text-white">{p.symbol}</td>
                           <td className="py-4">{p.vol}</td>
                           <td className="py-4">{p.entry}</td>
@@ -146,17 +193,22 @@ export default function RealTimeAnalysis() {
                           <td className="py-4 font-bold">{p.type === 0 ? "BUY" : "SELL"}</td>
                           <td className="py-4 w-40">
                             <div className="h-1.5 w-full bg-slate-700 rounded-full mb-1">
-                              <div className="h-1.5 bg-purple-500 rounded-full" style={{ width: `${Math.min(p.prog, 100)}%` }}></div>
+                              <div className="h-1.5 bg-purple-500 rounded-full" style={{ width: `${Math.min(p.prog || 0, 100)}%` }}></div>
                             </div>
                             <span className="text-[9px] text-gray-500 uppercase">{p.prog?.toFixed(1)}% to target</span>
                           </td>
                         </tr>
                       ))}
+                      {positions.length === 0 && (
+                         <tr><td colSpan={7} className="py-4 text-center text-gray-500">No open positions.</td></tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Closed History Table */}
             <Card className="bg-slate-800/50 border-slate-700 rounded-2xl shadow-lg mt-6">
               <CardHeader>
                 <CardTitle className="text-lg text-white font-bold">Closed Trades (Today)</CardTitle>
@@ -175,19 +227,21 @@ export default function RealTimeAnalysis() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/50">
-                      {(data?.closedHistory || []).map((b: any, i: number) => (
+                      {closedHistory.map((b: any, i: number) => (
                         <tr key={i} className="hover:bg-slate-800/30 transition-colors">
-                          <td className="py-4 text-purple-400 font-bold">{botNames[b.magic] || `Magic: ${b.magic}`}</td>
+                          <td className="py-4 text-purple-400 font-bold">
+                             {botNames[String(b.magic)] || `Magic: ${b.magic}`}
+                          </td>
                           <td className="py-4 text-white">{b.symbol}</td>
-                          <td className="py-4 text-emerald-500">{b.gains}</td>
-                          <td className="py-4 text-red-500">{b.losses}</td>
+                          <td className="py-4 text-emerald-500">$ {b.gains?.toFixed(2)}</td>
+                          <td className="py-4 text-red-500">$ {b.losses?.toFixed(2)}</td>
                           <td className="py-4 text-gray-300">{b.trades}</td>
                           <td className={`py-4 font-bold ${b.net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            $ {b.net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            $ {b.net?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </td>
                         </tr>
                       ))}
-                      {(!data?.closedHistory || data.closedHistory.length === 0) && (
+                      {closedHistory.length === 0 && (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-gray-500 italic">No closed trades recorded today.</td>
                         </tr>
@@ -204,6 +258,7 @@ export default function RealTimeAnalysis() {
   );
 }
 
+// Stats Components
 function StatCard({ title, value, color }: any) {
   return (
     <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-5 shadow-lg">
