@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/src/context/authcontext';
 import { realtimeDB } from '@/src/firebase';
 import { ref, onValue } from 'firebase/database';
@@ -16,14 +16,12 @@ export default function RealTimeAnalysis() {
   const [botNames, setBotNames] = useState<any>({});
   const [historyData, setHistoryData] = useState<any[]>([]);
 
-  // Referência para controlar a atualização apenas quando fechar trades
-  const lastClosedRef = useRef<number>(-1);
-
   useEffect(() => {
     if (!user) return;
 
-    // 1. Carrega nomes dos robôs
-    onValue(ref(realtimeDB, `users/${user.uid}/mt5_accounts`), (snap) => {
+    // 1. Carrega nomes dos robôs (Mapeamento Magic -> Nome)
+    const botsRef = ref(realtimeDB, `users/${user.uid}/mt5_accounts`);
+    onValue(botsRef, (snap) => {
       const val = snap.val();
       if (val) {
         const mapping: any = {};
@@ -32,36 +30,46 @@ export default function RealTimeAnalysis() {
       }
     });
 
-    // 2. Escuta dados em tempo real
+    // 2. Escuta dados em tempo real da análise
     const analysisRef = ref(realtimeDB, `analysis/${user.uid}`);
     const unsubscribe = onValue(analysisRef, (snapshot) => {
       const val = snapshot.val();
       if (val) {
         setData(val);
 
-        // --- LÓGICA INTELIGENTE DE DADOS ---
-        const currentClosedCount = val.metrics?.closedTrades || 0;
-        const currentProfit = val.metrics?.profit || 0;
+        // --- LÓGICA DE TRATAMENTO DO GRÁFICO ---
+        console.log("Dados recebidos do Firebase:", val); // Debug no navegador
 
-        // Atualiza apenas se houver novos fechamentos ou for a primeira carga
-        if (lastClosedRef.current === -1 || currentClosedCount > lastClosedRef.current) {
-            
-            setHistoryData(prev => {
-              const newPoint = { 
-                  time: new Date().toLocaleTimeString(), 
-                  profit: currentProfit 
-              };
-              
-              // Mantém o gráfico começando do ZERO para desenhar a curva corretamente
-              if (prev.length === 0) {
-                  return [{ time: 'Start', profit: 0 }, newPoint];
-              }
+        let rawChart = val.chartData;
+        let formattedChart: any[] = [];
 
-              return [...prev, newPoint].slice(-50);
-            });
-            
-            lastClosedRef.current = currentClosedCount;
+        // Verifica se existe chartData
+        if (rawChart) {
+           // Se for Array (padrão ideal), usa direto
+           if (Array.isArray(rawChart)) {
+              formattedChart = rawChart;
+           } 
+           // Se o Firebase converter para Objeto (chaves numéricas "0", "1"...), converte de volta para array
+           else if (typeof rawChart === 'object') {
+              formattedChart = Object.values(rawChart);
+           }
         }
+
+        // Se estiver vazio ou inválido, define o ponto inicial 0
+        if (!formattedChart || formattedChart.length === 0) {
+           formattedChart = [{ time: 'Start', value: 0 }];
+        }
+
+        // TRUQUE VISUAL: Se tiver apenas 1 ponto (ex: só o 'Start' ou só o primeiro trade),
+        // adiciona um ponto "Agora" repetindo o valor, para o gráfico desenhar uma linha reta.
+        if (formattedChart.length === 1) {
+           formattedChart.push({ 
+              time: 'Now', 
+              value: formattedChart[0].value 
+           });
+        }
+
+        setHistoryData(formattedChart);
       }
     });
 
@@ -71,8 +79,6 @@ export default function RealTimeAnalysis() {
   const metrics = data?.metrics;
   const positions = data?.positions || [];
   const closedHistory = data?.closedHistory || [];
-  
-  const hasActivityToday = closedHistory.length > 0 || (metrics?.profit !== 0);
 
   if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading...</div>;
 
@@ -94,7 +100,7 @@ export default function RealTimeAnalysis() {
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-6xl mx-auto space-y-6">
             
-            {/* Header */}
+            {/* Cabeçalho */}
             <div className="flex justify-between items-center bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
               <div>
                 <h1 className="text-2xl font-bold text-white">Real-Time Monitoring</h1>
@@ -103,7 +109,7 @@ export default function RealTimeAnalysis() {
               <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-bold px-3 py-1 rounded-full border border-emerald-500/20 animate-pulse">LIVE DATA</span>
             </div>
 
-            {/* Key Metrics */}
+            {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <StatCard title="Total Equity" value={`$ ${metrics?.equity?.toLocaleString() || '0.00'}`} color="text-white" />
               <StatCard title="Result (Today)" value={`$ ${metrics?.profit?.toLocaleString() || '0.00'}`} color={metrics?.profit >= 0 ? "text-emerald-400" : "text-red-400"} />
@@ -113,45 +119,39 @@ export default function RealTimeAnalysis() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* GRÁFICO: Visual Roxo (Restaurado) */}
+              {/* --- GRÁFICO DE CURVA DE RESULTADO (PnL) --- */}
               <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700 rounded-2xl shadow-lg">
                 <CardHeader><CardTitle className="text-sm text-gray-400 uppercase">Daily Result Curve (PnL)</CardTitle></CardHeader>
                 <CardContent className="h-[280px]">
-                  {hasActivityToday ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={historyData}>
-                        <defs>
-                          {/* Gradiente Roxo Original */}
-                          <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                        
-                        <XAxis dataKey="time" hide />
-                        <YAxis hide domain={['auto', 'auto']} /> 
-                        
-                        <Tooltip 
-                            contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px' }} 
-                            formatter={(value: number) => [`$ ${value.toFixed(2)}`, "Result"]}
-                        />
-                        
-                        {/* Area Roxa (#a855f7) igual ao original */}
-                        <Area 
-                            type="monotone" 
-                            dataKey="profit" 
-                            stroke="#a855f7" 
-                            fill="url(#colorProfit)" 
-                            strokeWidth={2} 
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-gray-400">
-                      <p className="text-sm font-medium">Waiting for closed trades...</p>
-                    </div>
-                  )}
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={historyData}>
+                      <defs>
+                        <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                      
+                      <XAxis dataKey="time" hide />
+                      <YAxis hide domain={['auto', 'auto']} /> 
+                      
+                      <Tooltip 
+                          contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '8px' }} 
+                          // O MQL5 envia a chave "value"
+                          formatter={(value: number) => [`$ ${value?.toFixed(2)}`, "Result"]}
+                      />
+                      
+                      <Area 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke="#a855f7" 
+                          fill="url(#colorProfit)" 
+                          strokeWidth={2} 
+                          isAnimationActive={false}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
@@ -166,7 +166,7 @@ export default function RealTimeAnalysis() {
               </Card>
             </div>
 
-            {/* Positions Table */}
+            {/* Tabela de Posições Abertas */}
             <Card className="bg-slate-800/50 border-slate-700 rounded-2xl shadow-lg">
               <CardHeader><CardTitle className="text-lg text-white font-bold">Open Positions</CardTitle></CardHeader>
               <CardContent>
@@ -208,7 +208,7 @@ export default function RealTimeAnalysis() {
               </CardContent>
             </Card>
 
-            {/* Closed History Table */}
+            {/* Tabela de Histórico (Closed Trades) */}
             <Card className="bg-slate-800/50 border-slate-700 rounded-2xl shadow-lg mt-6">
               <CardHeader>
                 <CardTitle className="text-lg text-white font-bold">Closed Trades (Today)</CardTitle>
@@ -251,6 +251,7 @@ export default function RealTimeAnalysis() {
                 </div>
               </CardContent>
             </Card>
+
           </div>
         </main>
       </div>
