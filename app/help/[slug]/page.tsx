@@ -66,7 +66,7 @@ const articlesData: any = {
                 Lucro Líquido dividido pelo Drawdown Máximo. Mede a capacidade da estratégia de sair do buraco.
               </p>
               <div className="bg-green-500/10 p-2 rounded text-xs text-green-300 border border-green-500/20">
-                <strong>Dica Dalio:</strong> Preferimos robôs com Recovery Factor maior que 3.0. Isso indica que ele recupera perdas rapidamente.
+                <strong>Dica Dalio:</strong> Preferimos robôs com Recovery Factor maior 3.0. Isso indica que ele recupera perdas rapidamente.
               </div>
             </div>
 
