@@ -6,7 +6,8 @@ import { useParams } from 'next/navigation';
 import {
   LayoutDashboard, LineChart, Dices, Target, Briefcase, Zap, Bot, Library,
   ArrowLeft, CheckCircle2, AlertCircle, TrendingUp, ShieldAlert, BookOpen, 
-  Layers, Activity, Settings, Save, AlertTriangle, Scale, Clock, Trash2, Edit, Plus
+  Layers, Activity, Settings, Save, AlertTriangle, Scale, Clock, Trash2, Edit, Plus,
+  LayoutGrid, MousePointerClick
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import Topbar from '@/components/topbar';
@@ -327,39 +328,76 @@ const articlesData: any = {
     title: 'Setup Library',
     icon: <Library className="w-8 h-8 text-pink-400" />,
     level: 'The Basics',
-    description: 'Seu repositório seguro. Armazene arquivos .set (configurações), versões de estratégias e documentação para nunca perder um parâmetro vencedor.',
+    description: 'Sua galeria visual de estratégias. Compare rapidamente o desempenho de todos os seus robôs lado a lado com cartões inteligentes e gráficos de pré-visualização.',
     content: (
       <div className="space-y-8 text-slate-300">
         <section>
-          <p className="mb-4">
-            Quantas vezes você perdeu aquele "set" otimizado porque formatou o PC ou esqueceu onde salvou? A Library é sua nuvem pessoal para estratégias.
+          <p className="lead text-lg text-slate-400 mb-6">
+            A <strong>Library</strong> transforma sua lista de arquivos em um portfólio visual. 
+            Em vez de ler nomes de arquivos, você vê o comportamento real de cada estratégia em <em>Cards</em> interativos classificados pelo DalioBot Score.
           </p>
-        </section>
-        
-        <section>
-          <h3 className="text-xl text-white font-bold mb-4 flex items-center gap-2">
-            <Save className="w-5 h-5 text-pink-400" />
-            O que você pode salvar?
-          </h3>
-          <ul className="space-y-4">
-            <li className="bg-slate-900/50 p-4 rounded border-l-2 border-pink-500">
-              <strong className="text-white block">Arquivos .SET</strong>
-              <p className="text-sm mt-1">Upload direto dos arquivos de configuração do MetaTrader. Você pode baixá-los em qualquer computador, a qualquer momento.</p>
-            </li>
-            <li className="bg-slate-900/50 p-4 rounded border-l-2 border-pink-500">
-              <strong className="text-white block">Versionamento</strong>
-              <p className="text-sm mt-1">Mantenha histórico: <em>"Estratégia Volatilidade v1.0"</em>, <em>"v1.2 (Ajuste Stop)"</em>. Nunca sobrescreva um set bom por acidente.</p>
-            </li>
-          </ul>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+             <div className="bg-slate-900/50 p-5 rounded-xl border border-pink-500/20">
+               <h4 className="text-pink-400 font-bold mb-3 flex items-center gap-2">
+                 <LayoutGrid className="w-5 h-5" /> 
+                 O Card de Estratégia
+               </h4>
+               <p className="text-sm text-slate-400 mb-3">
+                 Cada cartão é um mini-dashboard que resume a saúde do robô:
+               </p>
+               <ul className="space-y-2 text-sm">
+                 <li className="flex justify-between border-b border-slate-800 pb-1">
+                   <span>DalioBot Score</span>
+                   <strong className="text-white">Nota Geral</strong>
+                 </li>
+                 <li className="flex justify-between border-b border-slate-800 pb-1">
+                   <span>Profit Factor</span>
+                   <strong className="text-green-400">Eficiência</strong>
+                 </li>
+                 <li className="flex justify-between border-b border-slate-800 pb-1">
+                   <span>Max DD</span>
+                   <strong className="text-red-400">Risco ($)</strong>
+                 </li>
+               </ul>
+             </div>
+
+             <div className="bg-slate-900/50 p-5 rounded-xl border border-pink-500/20 flex flex-col justify-center">
+               <h4 className="text-pink-400 font-bold mb-3 flex items-center gap-2">
+                 <TrendingUp className="w-5 h-5" />
+                 Curva de Equity
+               </h4>
+               <p className="text-sm text-slate-400">
+                 O gráfico de área roxa no centro do card não é apenas decorativo. Ele mostra a <strong>curva de capital completa</strong> do backtest. 
+                 <br/><br/>
+                 Isso permite identificar instantaneamente estratégias instáveis (cheias de sobe-e-desce) versus estratégias consistentes (linha reta ascendente) sem precisar abrir os detalhes.
+               </p>
+             </div>
+          </div>
         </section>
 
         <section>
-          <div className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg flex items-start gap-3">
-             <BookOpen className="w-5 h-5 text-pink-400 flex-shrink-0 mt-1" />
-             <p className="text-sm text-pink-100">
-               <strong>Organização é Lucro:</strong> Recomendamos usar a Library para salvar o "Set Otimizado" logo após rodar o Optimizer. Assim, você mantém a fonte da sua estratégia segura.
-             </p>
+          <h3 className="text-xl text-white font-bold mb-4">Ações Rápidas</h3>
+          <p className="mb-4 text-slate-400">
+            A partir da Library, você pode navegar para ferramentas específicas de análise:
+          </p>
+          <div className="flex flex-col gap-3">
+             <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg border border-slate-700">
+               <div className="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded flex items-center gap-1"><MousePointerClick className="w-3 h-3"/> Details</div>
+               <span className="text-sm">Abre o <strong>Dashboard Completo</strong> com todas as métricas avançadas (VaR, Estagnação, etc).</span>
+             </div>
+             <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg border border-slate-700">
+               <div className="border border-purple-600 text-purple-400 text-xs font-bold px-3 py-1 rounded flex items-center gap-1"><MousePointerClick className="w-3 h-3"/> Daily Analysis</div>
+               <span className="text-sm">Leva para a visão de <strong>Calendário</strong>, focada nos resultados dia-a-dia e consistência mensal.</span>
+             </div>
           </div>
+        </section>
+        
+        <section className="mt-8 p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg flex items-start gap-3">
+             <Activity className="w-5 h-5 text-pink-400 flex-shrink-0 mt-1" />
+             <p className="text-sm text-pink-100">
+               <strong>Ranking Automático:</strong> A Library organiza seus robôs automaticamente do <strong>maior Score para o menor</strong>. As melhores estratégias sempre aparecem primeiro.
+             </p>
         </section>
       </div>
     )
