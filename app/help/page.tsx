@@ -29,25 +29,25 @@ const helpLevels = [
     title: 'The Basics',
     subtitle: "You're new? Start here!",
     description:
-      'Aprenda os fundamentos do DalioBot e entenda como navegar, configurar robôs e organizar seus arquivos.',
+      'Learn the DalioBot fundamentals and understand how to navigate, configure robots, and organize your files.',
     articles: [
       {
         title: 'Dashboard',
         slug: 'dashboard',
         icon: <LayoutDashboard className="w-5 h-5 text-purple-400" />,
-        description: 'Visão geral das métricas, saldo e status dos robôs.'
+        description: 'Overview of metrics, balance, and robot status.'
       },
       {
         title: 'Robots',
         slug: 'robots',
         icon: <Bot className="w-5 h-5 text-cyan-400" />,
-        description: 'Gerencie, configure e acompanhe seus robôs.'
+        description: 'Manage, configure, and track your robots.'
       },
       {
         title: 'Library',
         slug: 'library',
         icon: <Library className="w-5 h-5 text-pink-400" />,
-        description: 'Armazene arquivos .set, versões e estratégias.'
+        description: 'Store .set files, versions, and strategies.'
       }
     ]
   },
@@ -56,25 +56,25 @@ const helpLevels = [
     title: 'Analysis & Validation',
     subtitle: 'Test your edge before going live',
     description:
-      'Ferramentas avançadas para validar resultados, evitar overfitting e testar a robustez das estratégias.',
+      'Advanced tools to validate results, avoid overfitting, and test strategy robustness.',
     articles: [
       {
         title: 'Analysis',
         slug: 'analysis',
         icon: <LineChart className="w-5 h-5 text-blue-400" />,
-        description: 'Análise profunda de backtests do MetaTrader 5.'
+        description: 'Deep analysis of MetaTrader 5 backtests.'
       },
       {
         title: 'Monte Carlo',
         slug: 'monte-carlo',
         icon: <Dices className="w-5 h-5 text-red-400" />,
-        description: 'Simulações de risco e cenários futuros.'
+        description: 'Risk simulations and future scenarios.'
       },
       {
         title: 'Optimizer',
         slug: 'optimizer',
         icon: <Target className="w-5 h-5 text-green-400" />,
-        description: 'Avalie parâmetros e encontre regiões estáveis.'
+        description: 'Evaluate parameters and find stable regions.'
       }
     ]
   },
@@ -83,19 +83,19 @@ const helpLevels = [
     title: 'Execution & Scaling',
     subtitle: 'From strategy to real money',
     description:
-      'Conecte sua conta real, acompanhe resultados ao vivo e escale com múltiplos robôs.',
+      'Connect your real account, track live results, and scale with multiple robots.',
     articles: [
       {
         title: 'Portfolios',
         slug: 'portfolios',
         icon: <Briefcase className="w-5 h-5 text-yellow-400" />,
-        description: 'Combine robôs e reduza risco com diversificação.'
+        description: 'Combine robots and reduce risk with diversification.'
       },
       {
         title: 'Realtime',
         slug: 'realtime',
         icon: <Zap className="w-5 h-5 text-orange-400" />,
-        description: 'Monitoramento ao vivo via MetaTrader 5.'
+        description: 'Live monitoring via MetaTrader 5.'
       }
     ]
   }
@@ -139,8 +139,8 @@ export default function HelpCenterPage() {
               </h1>
             </div>
             <p className="text-slate-400 text-lg max-w-2xl">
-              Documentação oficial para entender cada ferramenta do DalioBot,
-              do básico ao avançado.
+              Official documentation to understand every DalioBot tool, 
+              from basics to advanced.
             </p>
           </div>
 

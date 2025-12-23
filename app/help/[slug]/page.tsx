@@ -25,16 +25,16 @@ const articlesData: any = {
     title: 'Dashboard',
     icon: <LayoutDashboard className="w-8 h-8 text-purple-400" />,
     level: 'The Basics',
-    description: 'O guia definitivo para interpretar cada número do seu painel. Entenda o que é ruído e o que é sinal na performance do seu robô.',
+    description: 'The definitive guide to interpreting every number on your dashboard. Understand what is noise and what is signal in your robot\'s performance.',
     content: (
       <div className="space-y-12 text-slate-300">
         
         {/* INTRODUÇÃO */}
         <section className="border-b border-slate-800 pb-8">
           <p className="lead text-lg text-slate-400 mb-4">
-            O Dashboard do DalioBot não mostra apenas "quanto você ganhou". Ele foi desenhado para responder à pergunta: 
-            <span className="text-white font-semibold"> "Vale a pena correr esse risco?"</span>. 
-            Abaixo, explicamos detalhadamente cada bloco de informação.
+            The DalioBot Dashboard doesn't just show "how much you earned". It was designed to answer the question: 
+            <span className="text-white font-semibold"> "Is this risk worth taking?"</span>. 
+            Below, we explain each information block in detail.
           </p>
         </section>
 
@@ -44,43 +44,43 @@ const articlesData: any = {
             <div className="p-2 bg-green-500/10 rounded-lg border border-green-500/20">
               <Scale className="w-6 h-6 text-green-400" />
             </div>
-            <h3 className="text-2xl text-white font-bold">1. Eficiência da Estratégia</h3>
+            <h3 className="text-2xl text-white font-bold">1. Strategy Efficiency</h3>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-700 hover:border-green-500/50 transition duration-300">
-              <strong className="text-white text-lg block mb-2">Profit Factor (Fator de Lucro)</strong>
+              <strong className="text-white text-lg block mb-2">Profit Factor</strong>
               <p className="text-sm text-slate-400 mb-3">
-                É a divisão do Lucro Bruto pela Perda Bruta. Responde: "Para cada $1 que o robô perdeu, quantos dólares ele ganhou?"
+                Gross Profit divided by Gross Loss. Answers: "For every $1 the robot lost, how many dollars did it gain?"
               </p>
               <ul className="text-xs space-y-1 text-slate-500">
-                <li>• <strong>Abaixo de 1.0:</strong> Estratégia perdedora.</li>
-                <li>• <strong>1.2 a 1.5:</strong> Aceitável.</li>
-                <li>• <strong>Acima de 1.6:</strong> Excelente robustez.</li>
+                <li>• <strong>Below 1.0:</strong> Losing strategy.</li>
+                <li>• <strong>1.2 to 1.5:</strong> Acceptable.</li>
+                <li>• <strong>Above 1.6:</strong> Excellent robustness.</li>
               </ul>
             </div>
 
             <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-700 hover:border-green-500/50 transition duration-300">
-              <strong className="text-white text-lg block mb-2">Recovery Factor (Fator de Recuperação)</strong>
+              <strong className="text-white text-lg block mb-2">Recovery Factor</strong>
               <p className="text-sm text-slate-400 mb-3">
-                Lucro Líquido dividido pelo Drawdown Máximo. Mede a capacidade da estratégia de sair do buraco.
+                Net Profit divided by Maximum Drawdown. Measures the strategy's ability to get out of the hole.
               </p>
               <div className="bg-green-500/10 p-2 rounded text-xs text-green-300 border border-green-500/20">
-                <strong>Dica Dalio:</strong> Preferimos robôs com Recovery Factor maior 3.0. Isso indica que ele recupera perdas rapidamente.
+                <strong>Dalio Tip:</strong> We prefer robots with a Recovery Factor greater than 3.0. This indicates it recovers losses quickly.
               </div>
             </div>
 
             <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-700 hover:border-green-500/50 transition duration-300">
-              <strong className="text-white text-lg block mb-2">Payoff (Risco x Retorno por Trade)</strong>
+              <strong className="text-white text-lg block mb-2">Payoff (Risk vs Return per Trade)</strong>
               <p className="text-sm text-slate-400">
-                Média de Ganho / Média de Perda. Se o Payoff é <strong>2.0</strong>, significa que seu ganho médio é o dobro da sua perda média. Estratégias seguidoras de tendência costumam ter Payoff alto e Taxa de Acerto menor.
+                Average Win / Average Loss. If the Payoff is <strong>2.0</strong>, it means your average win is double your average loss. Trend-following strategies usually have high Payoff and lower Win Rate.
               </p>
             </div>
 
             <div className="bg-slate-900/50 p-5 rounded-xl border border-slate-700 hover:border-green-500/50 transition duration-300">
-              <strong className="text-white text-lg block mb-2">Win Rate (Taxa de Acerto)</strong>
+              <strong className="text-white text-lg block mb-2">Win Rate</strong>
               <p className="text-sm text-slate-400">
-                Porcentagem de dias (ou trades) que fecharam no positivo. Cuidado: Uma taxa de acerto de 90% pode quebrar se o Payoff for muito baixo (ganha de colherinha, perde de balde).
+                Percentage of days (or trades) that closed positive. Warning: A 90% win rate can go bust if the Payoff is very low (wins by a spoonful, loses by a bucket).
               </p>
             </div>
           </div>
@@ -92,15 +92,15 @@ const articlesData: any = {
             <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
               <ShieldAlert className="w-6 h-6 text-red-400" />
             </div>
-            <h3 className="text-2xl text-white font-bold">2. Risco & Drawdown</h3>
+            <h3 className="text-2xl text-white font-bold">2. Risk & Drawdown</h3>
           </div>
 
           <div className="space-y-4">
             <div className="bg-slate-900 p-6 rounded-xl border-l-4 border-red-500">
               <h4 className="text-white font-bold text-lg">Maximum Drawdown (DD)</h4>
               <p className="text-slate-400 mt-1">
-                A maior queda percentual ou financeira que a conta sofreu desde um topo histórico até o fundo subsequente. 
-                <br/><span className="text-sm italic opacity-70">Exemplo: Se você tinha $10.000, caiu para $8.000 e depois subiu para $12.000, seu Drawdown foi de 20% ($2.000).</span>
+                The largest percentage or financial drop the account suffered from a historical peak to the subsequent trough. 
+                <br/><span className="text-sm italic opacity-70">Example: If you had $10,000, dropped to $8,000 and then rose to $12,000, your Drawdown was 20% ($2,000).</span>
               </p>
             </div>
 
@@ -108,13 +108,13 @@ const articlesData: any = {
               <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
                 <strong className="text-white block">VaR 95% (Value at Risk)</strong>
                 <p className="text-sm text-slate-400 mt-2">
-                  Uma estimativa estatística. Diz: "Com 95% de confiança, sua perda máxima em um único dia não passará deste valor". É o seu "limite de dor" diário esperado.
+                  A statistical estimate. Says: "With 95% confidence, your maximum loss in a single day will not exceed this value". It is your expected daily "pain threshold".
                 </p>
               </div>
               <div className="bg-slate-900 p-4 rounded-lg border border-slate-800">
-                <strong className="text-white block">Maior Perda Diária</strong>
+                <strong className="text-white block">Largest Daily Loss</strong>
                 <p className="text-sm text-slate-400 mt-2">
-                  O pior dia financeiro registrado no histórico. Diferente do VaR (que é teórico), este valor realmente aconteceu.
+                  The worst financial day recorded in history. Unlike VaR (which is theoretical), this value actually happened.
                 </p>
               </div>
             </div>
@@ -127,17 +127,17 @@ const articlesData: any = {
             <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <Clock className="w-6 h-6 text-blue-400" />
             </div>
-            <h3 className="text-2xl text-white font-bold">3. Tempo & Consistência</h3>
+            <h3 className="text-2xl text-white font-bold">3. Time & Consistency</h3>
           </div>
 
           <ul className="space-y-4">
             <li className="flex flex-col md:flex-row gap-4 p-4 bg-slate-900 rounded-lg border border-slate-700">
               <div className="min-w-[150px]">
-                <strong className="text-blue-400">Estagnação (Stagnation)</strong>
+                <strong className="text-blue-400">Stagnation</strong>
               </div>
               <div className="text-sm text-slate-300">
-                Também conhecido como <em>Time to Recovery</em>. É o maior número de dias que o robô ficou "de lado" ou no prejuízo sem renovar a máxima histórica de lucro. 
-                <br/><strong>Alerta:</strong> Estagnações maiores que 180 dias podem indicar que a estratégia parou de funcionar.
+                Also known as <em>Time to Recovery</em>. It represents the longest number of days the robot stayed "sideways" or in loss without renewing the historical profit high. 
+                <br/><strong>Alert:</strong> Stagnations longer than 180 days may indicate the strategy stopped working.
               </div>
             </li>
             <li className="flex flex-col md:flex-row gap-4 p-4 bg-slate-900 rounded-lg border border-slate-700">
@@ -145,7 +145,7 @@ const articlesData: any = {
                 <strong className="text-blue-400">CAGR</strong>
               </div>
               <div className="text-sm text-slate-300">
-                <em>Compound Annual Growth Rate</em>. A taxa de crescimento anual composta. É a melhor forma de comparar a rentabilidade do robô com investimentos tradicionais (como CDI ou S&P500).
+                <em>Compound Annual Growth Rate</em>. The best way to compare robot profitability with traditional investments (like S&P500).
               </div>
             </li>
             <li className="flex flex-col md:flex-row gap-4 p-4 bg-slate-900 rounded-lg border border-slate-700">
@@ -153,7 +153,7 @@ const articlesData: any = {
                 <strong className="text-blue-400">Sample Error</strong>
               </div>
               <div className="text-sm text-slate-300">
-                Desvio padrão dos retornos diários. Mede a volatilidade da curva. Quanto maior, mais "nervoso" é o gráfico de lucro.
+                Standard deviation of daily returns. Measures curve volatility. The higher it is, the more "nervous" the profit chart.
               </div>
             </li>
           </ul>
@@ -166,24 +166,24 @@ const articlesData: any = {
             <h3 className="text-xl text-white font-bold">DalioBot Score (0-10)</h3>
           </div>
           <p className="text-slate-300 mb-6">
-            Nosso algoritmo proprietário que condensa todas as métricas acima em uma nota única para facilitar a decisão.
+            Our proprietary algorithm that condenses all the metrics above into a single score to facilitate decision-making.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-slate-900 rounded-lg">
-              <span className="text-xs uppercase tracking-wider text-slate-500">Peso 35%</span>
-              <strong className="block text-white mt-1">Retorno</strong>
-              <p className="text-xs text-slate-400 mt-2">CAGR e Lucro Total</p>
+              <span className="text-xs uppercase tracking-wider text-slate-500">Weight 35%</span>
+              <strong className="block text-white mt-1">Return</strong>
+              <p className="text-xs text-slate-400 mt-2">CAGR and Total Profit</p>
             </div>
             <div className="text-center p-4 bg-slate-900 rounded-lg border border-purple-500/30 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
-              <span className="text-xs uppercase tracking-wider text-purple-400 font-bold">Peso 45%</span>
-              <strong className="block text-white mt-1">Risco</strong>
-              <p className="text-xs text-slate-400 mt-2">Drawdown e VaR</p>
+              <span className="text-xs uppercase tracking-wider text-purple-400 font-bold">Weight 45%</span>
+              <strong className="block text-white mt-1">Risk</strong>
+              <p className="text-xs text-slate-400 mt-2">Drawdown and VaR</p>
             </div>
             <div className="text-center p-4 bg-slate-900 rounded-lg">
-              <span className="text-xs uppercase tracking-wider text-slate-500">Peso 20%</span>
-              <strong className="block text-white mt-1">Estabilidade</strong>
-              <p className="text-xs text-slate-400 mt-2">Sharpe e Volatilidade</p>
+              <span className="text-xs uppercase tracking-wider text-slate-500">Weight 20%</span>
+              <strong className="block text-white mt-1">Stability</strong>
+              <p className="text-xs text-slate-400 mt-2">Sharpe and Volatility</p>
             </div>
           </div>
         </section>
@@ -196,24 +196,24 @@ const articlesData: any = {
     title: 'My Robots',
     icon: <Bot className="w-8 h-8 text-cyan-400" />,
     level: 'The Basics',
-    description: 'A garagem das suas estratégias. Aprenda a catalogar, organizar e gerenciar seu portfólio de backtests em um único lugar.',
+    description: 'Your strategy garage. Learn to catalog, organize, and manage your backtest portfolio in one place.',
     content: (
       <div className="space-y-12 text-slate-300">
         
         {/* INTRODUÇÃO */}
         <section className="border-b border-slate-800 pb-8">
           <p className="lead text-lg text-slate-400 mb-6">
-            A tela <strong>My Robots</strong> é o repositório central de todas as estratégias que você já testou e importou. 
-            Pense nela como uma biblioteca organizada onde você pode comparar rapidamente o desempenho de diferentes robôs antes de mergulhar nos detalhes.
+            The <strong>My Robots</strong> screen is the central repository for all strategies you have tested and imported. 
+            Think of it as an organized library where you can quickly compare the performance of different robots before diving into details.
           </p>
           
           <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
             <h4 className="flex items-center gap-2 text-white font-bold mb-4">
               <Activity className="w-5 h-5 text-cyan-400" />
-              Resumo do Card
+              Card Summary
             </h4>
             <p className="text-sm text-slate-400 mb-4">
-              Cada robô é representado por um "Card" inteligente que resume os dados vitais do backtest importado:
+              Each robot is represented by a smart "Card" that summarizes vital imported backtest data:
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                <div className="bg-slate-900 p-3 rounded border border-slate-800">
@@ -230,7 +230,7 @@ const articlesData: any = {
                </div>
                <div className="bg-slate-900 p-3 rounded border border-slate-800">
                  <span className="text-slate-500 text-xs uppercase">Period</span>
-                 <strong className="block text-white">Data Início - Fim</strong>
+                 <strong className="block text-white">Start - End Date</strong>
                </div>
             </div>
           </div>
@@ -242,11 +242,11 @@ const articlesData: any = {
             <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
               <Settings className="w-6 h-6 text-purple-400" />
             </div>
-            <h3 className="text-2xl text-white font-bold">2. Gerenciamento e Organização</h3>
+            <h3 className="text-2xl text-white font-bold">2. Management and Organization</h3>
           </div>
 
           <p className="text-slate-400 mb-6">
-            Manter suas estratégias organizadas é fundamental quando você começa a testar dezenas de variações. Utilize as ferramentas de edição para manter tudo em ordem.
+            Keeping your strategies organized is fundamental when you start testing dozens of variations. Use the editing tools to keep everything in order.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -256,9 +256,9 @@ const articlesData: any = {
                   <Edit className="w-5 h-5" />
                 </div>
                 <div>
-                  <strong className="text-white block mb-1">Editar Metadados</strong>
+                  <strong className="text-white block mb-1">Edit Metadata</strong>
                   <p className="text-sm text-slate-400">
-                    Clicando no ícone de lápis, você pode renomear a estratégia, categorizar o <strong>Mercado</strong> (Forex, Crypto, Indices), definir o <strong>Ativo</strong> (EURUSD, BTC, etc.) e o <strong>Tipo Operacional</strong> (Scalping, Swing, Day Trade).
+                    By clicking the pencil icon, you can rename the strategy, categorize the <strong>Market</strong> (Forex, Crypto, Indices), define the <strong>Asset</strong> (EURUSD, BTC, etc.), and the <strong>Operational Type</strong> (Scalping, Swing, Day Trade).
                   </p>
                 </div>
               </div>
@@ -268,9 +268,9 @@ const articlesData: any = {
                   <Trash2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <strong className="text-white block mb-1">Excluir Estratégias</strong>
+                  <strong className="text-white block mb-1">Delete Strategies</strong>
                   <p className="text-sm text-slate-400">
-                    Remova testes antigos ou estratégias descartadas para limpar sua visualização. A exclusão é permanente e remove os dados da nuvem.
+                    Remove old tests or discarded strategies to clean up your view. Deletion is permanent and removes data from the cloud.
                   </p>
                 </div>
               </div>
@@ -279,15 +279,15 @@ const articlesData: any = {
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                <h4 className="text-white font-bold mb-3 flex items-center gap-2">
                  <BookOpen className="w-4 h-4 text-purple-400" />
-                 A Importância da Descrição
+                 The Importance of Description
                </h4>
                <p className="text-sm text-slate-400 leading-relaxed">
-                 No modal de edição, existe um campo de <strong>Descrição</strong>. Recomendamos fortemente que você use este espaço para anotar detalhes técnicos do setup, como:
+                 In the edit modal, there is a <strong>Description</strong> field. We strongly recommend using this space to note technical setup details, such as:
                </p>
                <ul className="list-disc pl-5 mt-3 space-y-1 text-sm text-slate-500">
-                 <li>Timeframe utilizado (H1, M15).</li>
-                 <li>Indicadores principais (RSI, MA).</li>
-                 <li>Motivo do teste ou hipótese.</li>
+                 <li>Timeframe used (H1, M15).</li>
+                 <li>Main indicators (RSI, MA).</li>
+                 <li>Test reason or hypothesis.</li>
                </ul>
             </div>
           </div>
@@ -299,17 +299,17 @@ const articlesData: any = {
             <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <Plus className="w-6 h-6 text-blue-400" />
             </div>
-            <h3 className="text-2xl text-white font-bold">3. Adicionando Estratégias</h3>
+            <h3 className="text-2xl text-white font-bold">3. Adding Strategies</h3>
           </div>
 
           <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700 flex flex-col md:flex-row items-center gap-6">
              <div className="flex-1">
                <p className="text-slate-300 mb-4">
-                 O botão <strong>"+ Add a Strategy"</strong> é a porta de entrada. Ele redireciona você para a tela de Upload, onde o sistema processa automaticamente arquivos do MetaTrader 5:
+                 The <strong>"+ Add a Strategy"</strong> button is the gateway. It redirects you to the Upload screen, where the system automatically processes MetaTrader 5 files:
                </p>
                <ul className="space-y-2 text-sm text-slate-400">
-                 <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> Relatórios HTML (Backtest padrão).</li>
-                 <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> Arquivos CSV/XLSX (Exportação de histórico).</li>
+                 <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> HTML Reports (Standard Backtest).</li>
+                 <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> CSV/XLSX Files (History Export).</li>
                </ul>
              </div>
              <div className="w-full md:w-auto">
@@ -328,36 +328,36 @@ const articlesData: any = {
     title: 'Setup Library',
     icon: <Library className="w-8 h-8 text-pink-400" />,
     level: 'The Basics',
-    description: 'Sua galeria visual de estratégias. Compare rapidamente o desempenho de todos os seus robôs lado a lado com cartões inteligentes e gráficos de pré-visualização.',
+    description: 'Your visual strategy gallery. Quickly compare the performance of all your robots side-by-side with smart cards and preview charts.',
     content: (
       <div className="space-y-8 text-slate-300">
         <section>
           <p className="lead text-lg text-slate-400 mb-6">
-            A <strong>Library</strong> transforma sua lista de arquivos em um portfólio visual. 
-            Em vez de ler nomes de arquivos, você vê o comportamento real de cada estratégia em <em>Cards</em> interativos classificados pelo DalioBot Score.
+            The <strong>Library</strong> transforms your file list into a visual portfolio. 
+            Instead of reading filenames, you see real behavior of each strategy in interactive <em>Cards</em> sorted by DalioBot Score.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
              <div className="bg-slate-900/50 p-5 rounded-xl border border-pink-500/20">
                <h4 className="text-pink-400 font-bold mb-3 flex items-center gap-2">
                  <LayoutGrid className="w-5 h-5" /> 
-                 O Card de Estratégia
+                 The Strategy Card
                </h4>
                <p className="text-sm text-slate-400 mb-3">
-                 Cada cartão é um mini-dashboard que resume a saúde do robô:
+                 Each card is a mini-dashboard summarizing robot health:
                </p>
                <ul className="space-y-2 text-sm">
                  <li className="flex justify-between border-b border-slate-800 pb-1">
                    <span>DalioBot Score</span>
-                   <strong className="text-white">Nota Geral</strong>
+                   <strong className="text-white">Overall Score</strong>
                  </li>
                  <li className="flex justify-between border-b border-slate-800 pb-1">
                    <span>Profit Factor</span>
-                   <strong className="text-green-400">Eficiência</strong>
+                   <strong className="text-green-400">Efficiency</strong>
                  </li>
                  <li className="flex justify-between border-b border-slate-800 pb-1">
                    <span>Max DD</span>
-                   <strong className="text-red-400">Risco ($)</strong>
+                   <strong className="text-red-400">Risk ($)</strong>
                  </li>
                </ul>
              </div>
@@ -365,30 +365,30 @@ const articlesData: any = {
              <div className="bg-slate-900/50 p-5 rounded-xl border border-pink-500/20 flex flex-col justify-center">
                <h4 className="text-pink-400 font-bold mb-3 flex items-center gap-2">
                  <TrendingUp className="w-5 h-5" />
-                 Curva de Equity
+                 Equity Curve
                </h4>
                <p className="text-sm text-slate-400">
-                 O gráfico de área roxa no centro do card não é apenas decorativo. Ele mostra a <strong>curva de capital completa</strong> do backtest. 
+                 The purple area chart in the center is not just decorative. It shows the full <strong>capital curve</strong> of the backtest. 
                  <br/><br/>
-                 Isso permite identificar instantaneamente estratégias instáveis (cheias de sobe-e-desce) versus estratégias consistentes (linha reta ascendente) sem precisar abrir os detalhes.
+                 This allows instantly identifying unstable strategies (full of ups and downs) versus consistent ones (straight ascending line) without needing to open details.
                </p>
              </div>
           </div>
         </section>
 
         <section>
-          <h3 className="text-xl text-white font-bold mb-4">Ações Rápidas</h3>
+          <h3 className="text-xl text-white font-bold mb-4">Quick Actions</h3>
           <p className="mb-4 text-slate-400">
-            A partir da Library, você pode navegar para ferramentas específicas de análise:
+            From the Library, you can navigate to specific analysis tools:
           </p>
           <div className="flex flex-col gap-3">
              <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg border border-slate-700">
                <div className="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded flex items-center gap-1"><MousePointerClick className="w-3 h-3"/> Details</div>
-               <span className="text-sm">Abre o <strong>Dashboard Completo</strong> com todas as métricas avançadas (VaR, Estagnação, etc).</span>
+               <span className="text-sm">Opens the <strong>Full Dashboard</strong> with all advanced metrics (VaR, Stagnation, etc).</span>
              </div>
              <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg border border-slate-700">
                <div className="border border-purple-600 text-purple-400 text-xs font-bold px-3 py-1 rounded flex items-center gap-1"><MousePointerClick className="w-3 h-3"/> Daily Analysis</div>
-               <span className="text-sm">Leva para a visão de <strong>Calendário</strong>, focada nos resultados dia-a-dia e consistência mensal.</span>
+               <span className="text-sm">Takes you to the <strong>Calendar</strong> view, focused on day-to-day results and monthly consistency.</span>
              </div>
           </div>
         </section>
@@ -396,7 +396,7 @@ const articlesData: any = {
         <section className="mt-8 p-4 bg-pink-500/10 border border-pink-500/20 rounded-lg flex items-start gap-3">
              <Activity className="w-5 h-5 text-pink-400 flex-shrink-0 mt-1" />
              <p className="text-sm text-pink-100">
-               <strong>Ranking Automático:</strong> A Library organiza seus robôs automaticamente do <strong>maior Score para o menor</strong>. As melhores estratégias sempre aparecem primeiro.
+               <strong>Automatic Ranking:</strong> The Library automatically organizes your robots from <strong>highest to lowest Score</strong>. The best strategies always appear first.
              </p>
         </section>
       </div>
@@ -410,34 +410,34 @@ const articlesData: any = {
     title: 'Analysis',
     icon: <LineChart className="w-8 h-8 text-blue-400" />,
     level: 'Analysis & Validation',
-    description: 'Auditoria profunda de backtests. Visualize métricas ocultas, identifique padrões de erro e valide a consistência antes de arriscar dinheiro real.',
+    description: 'Deep backtest auditing. Visualize hidden metrics, identify error patterns, and validate consistency before risking real money.',
     content: (
       <div className="space-y-8 text-slate-300">
         <section>
           <p className="lead text-lg text-slate-400 mb-4">
-            O relatório padrão do MT5 é limitado. A ferramenta Analysis importa esses dados e aplica uma camada de inteligência visual.
+            The standard MT5 report is limited. The Analysis tool imports this data and applies a layer of visual intelligence.
           </p>
         </section>
 
         <section>
-          <h3 className="text-xl text-white font-bold mb-4">Funcionalidades Chave</h3>
+          <h3 className="text-xl text-white font-bold mb-4">Key Features</h3>
           <div className="grid grid-cols-1 gap-4">
             <div className="bg-slate-900 p-5 rounded-lg border border-slate-700 hover:border-blue-500 transition">
-              <strong className="text-blue-400 text-lg">1. Upload Multi-Formato</strong>
+              <strong className="text-blue-400 text-lg">1. Multi-Format Upload</strong>
               <p className="mt-2 text-sm">
-                Suportamos relatórios HTML (Backtest Report) e CSV (Exportação de Excel) do MetaTrader 5. Basta arrastar o arquivo para gerar os gráficos instantaneamente.
+                We support HTML reports (Backtest Report) and CSV (Excel Export) from MetaTrader 5. Just drag the file to generate charts instantly.
               </p>
             </div>
             <div className="bg-slate-900 p-5 rounded-lg border border-slate-700 hover:border-blue-500 transition">
-              <strong className="text-blue-400 text-lg">2. Gráfico de Dispersão Diária</strong>
+              <strong className="text-blue-400 text-lg">2. Daily Scatter Plot</strong>
               <p className="mt-2 text-sm">
-                Visualize cada dia de operação como um ponto no gráfico. Isso ajuda a identificar <em>Outliers</em> (lucros ou perdas anormais) que podem distorcer a realidade da estratégia.
+                Visualize every trading day as a point on the chart. This helps identify <em>Outliers</em> (abnormal profits or losses) that may distort strategy reality.
               </p>
             </div>
             <div className="bg-slate-900 p-5 rounded-lg border border-slate-700 hover:border-blue-500 transition">
-              <strong className="text-blue-400 text-lg">3. Análise de Consistência</strong>
+              <strong className="text-blue-400 text-lg">3. Consistency Analysis</strong>
               <p className="mt-2 text-sm">
-                Verifique a distribuição de lucros mensais e anuais. Uma boa estratégia não deve depender de um único "mês de sorte" para ser lucrativa no ano.
+                Check monthly and annual profit distribution. A good strategy shouldn't rely on a single "lucky month" to be profitable for the year.
               </p>
             </div>
           </div>
@@ -449,37 +449,37 @@ const articlesData: any = {
     title: 'Monte Carlo',
     icon: <Dices className="w-8 h-8 text-red-400" />,
     level: 'Analysis & Validation',
-    description: 'Simulação de cenários alternativos. Embaralhamos a ordem dos seus trades milhares de vezes para descobrir o risco oculto da estratégia.',
+    description: 'Alternative scenario simulation. We shuffle your trade order thousands of times to discover the strategy\'s hidden risk.',
     content: (
       <div className="space-y-8 text-slate-300">
         <section>
           <div className="flex items-start gap-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg mb-6">
             <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
             <div>
-              <h4 className="text-red-400 font-bold mb-1">Por que usar?</h4>
+              <h4 className="text-red-400 font-bold mb-1">Why use it?</h4>
               <p className="text-sm text-red-100/80">
-                O backtest mostra apenas <strong>uma</strong> sequência histórica de eventos. Mas o futuro pode apresentar esses mesmos eventos em uma ordem diferente, o que pode ser fatal para o seu capital.
+                The backtest shows only <strong>one</strong> historical sequence of events. But the future may present these same events in a different order, which can be fatal to your capital.
               </p>
             </div>
           </div>
           <p>
-            O simulador Monte Carlo reordena (embaralha) os retornos diários da sua estratégia 100, 500 ou 1.000 vezes, criando "universos paralelos" da sua performance.
+            The Monte Carlo simulator reorders (shuffles) your daily returns 100, 500, or 1,000 times, creating "parallel universes" of your performance.
           </p>
         </section>
 
         <section>
-          <h3 className="text-xl text-white font-bold mb-4">Interpretando os Resultados</h3>
+          <h3 className="text-xl text-white font-bold mb-4">Interpreting Results</h3>
           <ul className="space-y-4">
             <li className="bg-slate-900 p-4 rounded border-l-4 border-red-500">
-              <strong className="text-white block text-lg">Cone de Probabilidade</strong>
+              <strong className="text-white block text-lg">Probability Cone</strong>
               <p className="text-sm mt-1">
-                O gráfico mostra várias linhas coloridas. A linha central é a média. As linhas superiores e inferiores mostram até onde sua estratégia pode chegar (para o bem ou para o mal) com <strong>95% ou 99% de confiança</strong>.
+                The chart shows several colored lines. The center line is the average. Upper and lower lines show where your strategy might go (for better or worse) with <strong>95% or 99% confidence</strong>.
               </p>
             </li>
             <li className="bg-slate-900 p-4 rounded border-l-4 border-red-500">
-              <strong className="text-white block text-lg">Drawdown Estimado</strong>
+              <strong className="text-white block text-lg">Estimated Drawdown</strong>
               <p className="text-sm mt-1">
-                Muitas vezes, o Monte Carlo revela que seu Drawdown real pode ser 2x maior que o do backtest simplesmente mudando a ordem dos dias negativos. <strong>Esteja preparado para esse cenário.</strong>
+                Often, Monte Carlo reveals your real Drawdown could be 2x higher than the backtest just by changing the order of losing days. <strong>Be prepared for this scenario.</strong>
               </p>
             </li>
           </ul>
@@ -491,31 +491,31 @@ const articlesData: any = {
     title: 'Optimizer',
     icon: <Target className="w-8 h-8 text-green-400" />,
     level: 'Analysis & Validation',
-    description: 'Encontre a robustez, não apenas o lucro máximo. Utilize mapas de calor e análise paramétrica para evitar o "Overfitting".',
+    description: 'Find robustness, not just maximum profit. Use heatmaps and parametric analysis to avoid "Overfitting".',
     content: (
       <div className="space-y-8 text-slate-300">
         <section>
           <p className="mb-4">
-            Otimizar não é apenas encontrar o parâmetro que deu mais dinheiro. Isso geralmente leva ao <em>Overfitting</em> (ajuste excessivo ao passado). O Optimizer do DalioBot ajuda a encontrar <strong>zonas de estabilidade</strong>.
+            Optimizing isn't just finding the parameter that made the most money. This usually leads to <em>Overfitting</em> (excessive adjustment to the past). The DalioBot Optimizer helps find <strong>stability zones</strong>.
           </p>
         </section>
 
         <section>
-          <h3 className="text-xl text-white font-bold mb-4">Como utilizar?</h3>
+          <h3 className="text-xl text-white font-bold mb-4">How to use?</h3>
           <ol className="list-decimal pl-5 space-y-4">
             <li>
-              <strong>Importe os Resultados da Otimização:</strong> Exporte a tabela de otimização do MT5 (XML/CSV) e carregue aqui.
+              <strong>Import Optimization Results:</strong> Export the MT5 optimization table (XML/CSV) and load it here.
             </li>
             <li>
-              <strong>Analise o Mapa de Calor (Heatmap):</strong>
+              <strong>Analyze the Heatmap:</strong>
               <p className="text-sm mt-1 text-slate-400">
-                Procure por "manchas" verdes grandes e contínuas no gráfico. Isso indica que, mesmo se o mercado mudar um pouco (ou se você errar levemente o parâmetro), a estratégia continua lucrando.
+                Look for large, continuous green "patches" on the chart. This indicates that even if the market changes slightly (or you slightly miss the parameter), the strategy continues to profit.
               </p>
             </li>
             <li>
-              <strong>Evite Picos Solitários:</strong>
+              <strong>Avoid Lonely Peaks:</strong>
               <p className="text-sm mt-1 text-slate-400">
-                Se um parâmetro gera 500% de lucro, mas o parâmetro vizinho gera prejuízo, fuja! Isso é sorte, não robustez.
+                If a parameter generates 500% profit but the neighboring parameter generates a loss, run away! That's luck, not robustness.
               </p>
             </li>
           </ol>
@@ -531,19 +531,19 @@ const articlesData: any = {
     title: 'Portfolios',
     icon: <Briefcase className="w-8 h-8 text-yellow-400" />,
     level: 'Execution & Scaling',
-    description: 'O poder da diversificação. Combine múltiplos robôs para suavizar a curva de capital e reduzir o risco global da conta.',
+    description: 'The power of diversification. Combine multiple robots to smooth the equity curve and reduce global account risk.',
     content: (
       <div className="space-y-8 text-slate-300">
         <section>
           <p className="lead text-lg text-slate-400 mb-6">
-            O "Santo Graal" do trading não é um robô perfeito, é um portfólio de robôs imperfeitos que se complementam.
+            The "Holy Grail" of trading isn't a perfect robot, it's a portfolio of imperfect robots that complement each other.
           </p>
           
           <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl flex flex-col md:flex-row gap-6 items-center">
              <div className="flex-1">
-               <h4 className="text-yellow-400 font-bold text-lg mb-2">Simulação Combinada</h4>
+               <h4 className="text-yellow-400 font-bold text-lg mb-2">Combined Simulation</h4>
                <p className="text-sm">
-                 Selecione 2, 3 ou 10 robôs da sua lista. O sistema irá somar as curvas de capital dia a dia. Muitas vezes, quando o Robô A perde, o Robô B ganha, mantendo seu saldo estável.
+                 Select 2, 3, or 10 robots from your list. The system will sum the capital curves day by day. Often, when Robot A loses, Robot B wins, keeping your balance stable.
                </p>
              </div>
              <Layers className="w-16 h-16 text-slate-700" />
@@ -551,18 +551,18 @@ const articlesData: any = {
         </section>
 
         <section>
-          <h3 className="text-xl text-white font-bold mb-4">Análise de Correlação</h3>
+          <h3 className="text-xl text-white font-bold mb-4">Correlation Analysis</h3>
           <p className="mb-4">
-            Para que a diversificação funcione, os robôs devem ser <strong>descorrelacionados</strong>.
+            For diversification to work, robots must be <strong>uncorrelated</strong>.
           </p>
           <ul className="space-y-2">
             <li className="flex items-center gap-2 text-sm">
               <span className="w-3 h-3 rounded-full bg-green-500"></span>
-              <strong>Correlação Baixa/Negativa:</strong> Ideal. Os robôs operam de formas diferentes.
+              <strong>Low/Negative Correlation:</strong> Ideal. Robots operate in different ways.
             </li>
             <li className="flex items-center gap-2 text-sm">
               <span className="w-3 h-3 rounded-full bg-red-500"></span>
-              <strong>Correlação Alta (perto de 1):</strong> Perigo. Se um perder, o outro também perderá, dobrando seu risco.
+              <strong>High Correlation (close to 1):</strong> Danger. If one loses, the other will also lose, doubling your risk.
             </li>
           </ul>
         </section>
@@ -573,32 +573,32 @@ const articlesData: any = {
     title: 'Realtime Monitor',
     icon: <Zap className="w-8 h-8 text-orange-400" />,
     level: 'Execution & Scaling',
-    description: 'Conexão ao vivo. Monitore o que está acontecendo na sua conta MetaTrader 5 agora mesmo, sem precisar abrir o terminal.',
+    description: 'Live connection. Monitor what is happening in your MetaTrader 5 account right now, without needing to open the terminal.',
     content: (
       <div className="space-y-8 text-slate-300">
         <section>
           <p className="mb-4">
-            O Realtime Monitor atua como uma ponte (Bridge) entre o servidor web do DalioBot e o seu terminal MT5 instalado no PC ou VPS.
+            The Realtime Monitor acts as a bridge between the DalioBot web server and your MT5 terminal installed on your PC or VPS.
           </p>
           <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
              <h4 className="font-bold text-orange-400 mb-2 flex items-center gap-2">
-               <Activity className="w-4 h-4" /> Dados ao Vivo
+               <Activity className="w-4 h-4" /> Live Data
              </h4>
              <ul className="list-disc pl-5 space-y-1 text-sm text-orange-100/80">
-               <li>Lucro/Prejuízo (PnL) das posições abertas.</li>
-               <li>Saldo e Equity atualizados instantaneamente.</li>
-               <li>Latência da conexão (Ping).</li>
+               <li>Profit/Loss (PnL) of open positions.</li>
+               <li>Balance and Equity updated instantly.</li>
+               <li>Connection Latency (Ping).</li>
              </ul>
           </div>
         </section>
 
         <section>
-          <h3 className="text-xl text-white font-bold mb-4">Requisitos</h3>
+          <h3 className="text-xl text-white font-bold mb-4">Requirements</h3>
           <p className="text-sm mb-4">
-            Para que esta funcionalidade opere, você precisa instalar o <strong>Expert Advisor (EA) Ponte</strong> no seu MetaTrader 5 e ativar a opção "Allow WebRequest" nas configurações do terminal.
+            For this feature to work, you need to install the <strong>Bridge Expert Advisor (EA)</strong> on your MetaTrader 5 and enable the "Allow WebRequest" option in terminal settings.
           </p>
           <p className="text-sm text-slate-400">
-            <em>Nota: Esta funcionalidade depende de o terminal MT5 estar aberto e conectado à internet.</em>
+            <em>Note: This feature depends on the MT5 terminal being open and connected to the internet.</em>
           </p>
         </section>
       </div>
@@ -625,10 +625,10 @@ export default function HelpArticlePage() {
         <Topbar />
         <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
           <AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Artigo não encontrado</h2>
-          <p className="text-slate-400 mb-6">O tópico "{slug}" ainda não foi documentado ou não existe.</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Article not found</h2>
+          <p className="text-slate-400 mb-6">The topic "{slug}" has not been documented yet or does not exist.</p>
           <Link href="/help" className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition">
-            Voltar para o Help Center
+            Back to Help Center
           </Link>
         </div>
       </div>
@@ -658,7 +658,7 @@ export default function HelpArticlePage() {
               <div className="bg-slate-800 p-2 rounded-full mr-3 group-hover:bg-purple-500/20 transition-colors">
                  <ArrowLeft className="w-4 h-4" />
               </div>
-              <span className="text-sm font-medium">Voltar para Help Center</span>
+              <span className="text-sm font-medium">Back to Help Center</span>
             </Link>
 
             {/* Cabeçalho do Artigo */}
@@ -694,14 +694,14 @@ export default function HelpArticlePage() {
 
             {/* Footer de Ajuda */}
             <div className="mt-12 bg-slate-800 rounded-xl p-8 text-center border border-slate-700">
-                <h4 className="text-white font-semibold mb-2">Ainda tem dúvidas sobre {article.title}?</h4>
-                <p className="text-slate-400 text-sm mb-6">Nossa equipe técnica pode ajudar a analisar seu caso específico.</p>
+                <h4 className="text-white font-semibold mb-2">Still have questions about {article.title}?</h4>
+                <p className="text-slate-400 text-sm mb-6">Our technical team can help analyze your specific case.</p>
                 <div className="flex justify-center gap-4">
                     <button className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition text-sm font-medium">
-                        Ver Tutoriais em Vídeo
+                        Watch Video Tutorials
                     </button>
                     <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition text-sm font-medium shadow-lg shadow-purple-500/20">
-                        Contatar Suporte
+                        Contact Support
                     </button>
                 </div>
             </div>
