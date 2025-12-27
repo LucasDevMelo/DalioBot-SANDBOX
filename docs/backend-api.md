@@ -44,8 +44,7 @@ O Expert Advisor (EA) deve enviar um objeto JSON seguindo estritamente a estrutu
 "profit": 5.20, // Lucro líquido (apenas para ordens fechadas)
 "time": "2023-10-27 14:30:00" // Horário do Servidor (YYYY-MM-DD HH:MM:SS)
 }
-
-text
+"""
 
 ### Lógica de Processamento
 
