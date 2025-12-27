@@ -14,12 +14,12 @@ O **DalioBot** é uma plataforma SaaS voltada para traders quantitativos, permit
 ## ⚡ Quick Start
 
 1. **Clone o repositório:**
-   \`\`\`bash
+   \`\`\`
    git clone [url-do-repo]
    \`\`\`
 
 2. **Instale as dependências:**
-   \`\`\`bash
+   \`\`\`
    npm install
    # ou
    yarn install
@@ -29,7 +29,7 @@ O **DalioBot** é uma plataforma SaaS voltada para traders quantitativos, permit
    Crie um arquivo \`.env.local\` (veja \`docs/setup.md\` para detalhes).
 
 4. **Rode o servidor de desenvolvimento:**
-   \`\`\`bash
+   \`\`\`
    npm run dev
    \`\`\`
 
