@@ -18,8 +18,7 @@ O projeto segue a convenção de roteamento baseada em arquivos do Next.js dentr
 
 | Caminho                      | Responsabilidade (Página/Rota)                          |
 |------------------------------|---------------------------------------------------------|
-| `app/layout.js`              | Root Layout. Define fontes (Inter), meta tags globais,  |
-                               |CSS global e envolve a aplicação no AuthContext          |
+| `app/layout.js`              | Root Layout. Define fontes (Inter), meta tags globais, CSS global e envolve a aplicação no AuthContext          |
 | `app/page.js`                | Landing Page. Página pública inicial                    |
 | `app/add/page.tsx`           | Upload de Estratégia. Parser de HTML do MT5             |
 | `app/dashboard/page.tsx`     | Painel Principal. Visão geral do backtestr do EA        |
@@ -85,6 +84,7 @@ Envolve toda aplicação em `app/layout.js`.
 
 ### PROTEÇÃO DE ROTAS (CLIENT-SIDE)
 
+```js
 const { user, loading } = useAuth();
 const router = useRouter();
 
@@ -93,7 +93,7 @@ useEffect(() => {
         router.push('/login');
     }
 }, [user, loading, router]);
-
+```
 
 ## ESTILIZAÇÃO E DESIGN SYSTEM
 
