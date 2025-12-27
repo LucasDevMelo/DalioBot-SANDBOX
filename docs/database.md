@@ -19,6 +19,7 @@ A raiz do banco de dados é dividida em quatro coleções principais:
 
 Armazena informações de identificação e status comercial (SaaS) do usuário.
 
+```jsonc
 {
   "userId": "JzK9sTv...",
   "email": "trader@email.com",
@@ -37,6 +38,7 @@ Armazena informações de identificação e status comercial (SaaS) do usuário.
     "language": "en"
   }
 }
+```
 
 ## ESTRATÉGIAS (/STRATEGIES)
 
@@ -45,6 +47,7 @@ Armazena informações de identificação e status comercial (SaaS) do usuário.
 
 Armazena os relatórios de backtest enviados pelo usuário via upload de HTML. Estes dados são estáticos após a criação.
 
+```jsonc
 {
   "id": "strategy_uuid_v4...",
   "name": "Forex Scalper V1",
@@ -69,6 +72,7 @@ Armazena os relatórios de backtest enviados pelo usuário via upload de HTML. E
     }
   ]
 }
+```
 
 ## ROBÔS EM TEMPO REAL (/ROBOTS)
 
@@ -76,6 +80,7 @@ Armazena os relatórios de backtest enviados pelo usuário via upload de HTML. E
 
 Armazena o estado atual dos Expert Advisors conectados via Bridge. Estes dados são atualizados frequentemente (alta frequência de escrita).
 
+```jsonc
 {
   "magicNumber": 123456,
   "name": "Live Scalper",
@@ -100,6 +105,7 @@ Armazena o estado atual dos Expert Advisors conectados via Bridge. Estes dados s
     }
   }
 }
+```
 
 ## PORTFÓLIOS (/PORTFOLIOS)
 
@@ -107,6 +113,7 @@ Armazena o estado atual dos Expert Advisors conectados via Bridge. Estes dados s
 
 Agrupa múltiplas estratégias para análise de correlação. Este nó armazena apenas referências e configurações, não duplica os dados brutos das estratégias.
 
+```jsonc
 {
   "id": "port_uuid_v4...",
   "name": "Forex Aggressive Mix",
@@ -124,11 +131,13 @@ Agrupa múltiplas estratégias para análise de correlação. Este nó armazena 
     ]
   }
 }
+```
 
 ## REGRAS DE SEGURANÇA (FIREBASE RULES)
 
 Para garantir a integridade dos dados, as seguintes regras devem ser aplicadas no Console do Firebase:
 
+```jsonc
 {
   "rules": {
     "users": {
@@ -157,5 +166,5 @@ Para garantir a integridade dos dados, as seguintes regras devem ser aplicadas n
     }
   }
 }
-
+```
 
