@@ -76,6 +76,7 @@ Recupera uma lista consolidada de todas as estratégias (robôs) ativas de um us
 
 ### Exemplo de Resposta (JSON)
 
+```jsonc
 {
   "robots": [
     {
@@ -91,6 +92,7 @@ Recupera uma lista consolidada de todas as estratégias (robôs) ativas de um us
     }
   ]
 }
+```
 
 ### Respostas HTTP
 
