@@ -50,31 +50,43 @@ O banco de dados segue uma estrutura hierárquica baseada em JSON:
 
 ```jsonc
 {
-    "users": {
-    "uid": { "email": "...", "plano": "..." }
-    },
-    "estrategias": {
+  "users": {
     "uid": {
-    "strategyName": {
-    "nome": "String",
-    "mercado": "String",
-    "dadosCSV": [
-{ "<DATE>": "YYYY-MM-DD", "<BALANCE>": "1000.00", "<EQUITY>": "1000.00" },
-
-],
-"metrics": { "fatorLucro": 1.5, "drawdown": 1000, ... }
-}
-}
-},
-"portfolios": {
-"uid": {
-"portfolioId": {
-"nomePortfolio": "String",
-"robos": ["strategyName1", "strategyName2"],
-"dataCriacao": "ISOString"
-}
-}
-}
+      "email": "string",
+      "plano": "string"
+    }
+  },
+  "estrategias": {
+    "uid": {
+      "strategyName": {
+        "nome": "string",
+        "mercado": "string",
+        "dadosCSV": [
+          {
+            "<DATE>": "YYYY-MM-DD",
+            "<BALANCE>": "1000.00",
+            "<EQUITY>": "1000.00"
+          }
+        ],
+        "metrics": {
+          "fatorLucro": 1.5,
+          "drawdown": 1000,
+          "profitFactor": 1.5,
+          "sharpeRatio": 1.2,
+          "totalNetProfit": 5000.00
+        }
+      }
+    }
+  },
+  "portfolios": {
+    "uid": {
+      "portfolioId": {
+        "nomePortfolio": "string",
+        "robos": ["strategyName1", "strategyName2"],
+        "dataCriacao": "2025-01-01T00:00:00Z"
+      }
+    }
+  }
 }
 ```
 
