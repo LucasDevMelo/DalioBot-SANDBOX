@@ -1,7 +1,6 @@
 'use client';
 
-// Todos os seus imports permanecem aqui
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { NumericFormat } from 'react-number-format';
 import { getDatabase, ref, get } from 'firebase/database';
@@ -9,7 +8,6 @@ import { useAuth } from '@/src/context/authcontext';
 import Topbar from '../../components/topbar';
 import Sidebar from '../../components/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReferenceArea } from 'recharts';
 
 import {
     LineChart,
@@ -25,10 +23,9 @@ import {
     YAxis,
     Tooltip,
     ResponsiveContainer,
-    ComposedChart,
-    Area,
 } from 'recharts';
 
+// Interface ajustada para o uso interno no Dashboard
 interface CsvData {
     DATE: string;
     BALANCE: number;
@@ -36,9 +33,16 @@ interface CsvData {
     'DEPOSIT LOAD': number;
 }
 
+// Interface para o formato salvo pelo add/page.tsx (HTML Parser)
+interface HtmlStrategyData {
+    "<DATE>": string;
+    "<BALANCE>": string;
+    "<EQUITY>": string;
+    "<DEPOSIT LOAD>": string;
+}
+
 type Aba = 'resultados' | 'metricasAvancadas';
 
-// ADICIONE ESTE NOVO HOOK AQUI
 function useWindowSize() {
     const [windowSize, setWindowSize] = useState<{ width?: number; height?: number }>({
         width: undefined,
@@ -69,7 +73,7 @@ function calculatePearsonCorrelation(series1: number[], series2: number[]): numb
         return NaN;
     }
     const n = series1.length;
-    if (n < 2) return NaN; // Not enough data points for correlation
+    if (n < 2) return NaN;
 
     const sumX = series1.reduce((a, b) => a + b, 0);
     const sumY = series2.reduce((a, b) => a + b, 0);
@@ -94,69 +98,50 @@ function calculatePearsonCorrelation(series1: number[], series2: number[]): numb
     return sumXY / Math.sqrt(sumX2 * sumY2);
 }
 
-// Helper function to get cell styling for the correlation matrix (Updated for Dark Theme)
 const getCorrelationCellStyle = (value: number | undefined | null) => {
     if (typeof value !== 'number' || isNaN(value)) {
-        return 'bg-slate-800 text-gray-500'; // N/A
+        return 'bg-slate-800 text-gray-500';
     }
-    if (value === 1) return 'bg-purple-600 text-white'; // Perfect
-    if (value > 0.7) return 'bg-green-600 text-white';  // High Positive
-    if (value > 0.3) return 'bg-green-800 text-white';  // Mid Positive
-    if (value > 0.1) return 'bg-slate-600 text-gray-300'; // Low Positive
-    if (value > -0.1) return 'bg-slate-700 text-gray-400'; // No Correlation
-    if (value > -0.3) return 'bg-slate-600 text-gray-300'; // Low Negative
-    if (value > -0.7) return 'bg-red-800 text-white';    // Mid Negative
-    return 'bg-red-600 text-white'; // High Negative
+    if (value === 1) return 'bg-purple-600 text-white';
+    if (value > 0.7) return 'bg-green-600 text-white';
+    if (value > 0.3) return 'bg-green-800 text-white';
+    if (value > 0.1) return 'bg-slate-600 text-gray-300';
+    if (value > -0.1) return 'bg-slate-700 text-gray-400';
+    if (value > -0.3) return 'bg-slate-600 text-gray-300';
+    if (value > -0.7) return 'bg-red-800 text-white';
+    return 'bg-red-600 text-white';
 };
 
-
-// Componente para a Tabela de Performance Mensal
-// Componente para a Tabela de Performance Mensal
 const MonthlyPerformanceTable = ({ data }: { data: { [year: number]: { [month: number]: number } } }) => {
-    const years = Object.keys(data).map(Number).sort((a, b) => b - a); // Anos em ordem decrescente
+    const years = Object.keys(data).map(Number).sort((a, b) => b - a);
     const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const shortMonths = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-
-    if (years.length === 0) {
-        return null; // Não renderiza nada se não houver dados
-    }
+    if (years.length === 0) return null;
 
     return (
-        // [CORREÇÃO] Aplicadas classes de dark mode ao Card principal
         <Card className="md:col-span-3 bg-slate-800 border-slate-700">
             <CardHeader>
-                {/* [CORREÇÃO] Aplicada classe de texto dark mode */}
                 <CardTitle className="text-white">Monthly Results</CardTitle>
             </CardHeader>
             <CardContent>
-
-                {/* ================================================================ */}
-                {/* VISTA PARA DESKTOP (tabela) - Visível a partir de 'md' (768px) */}
-                {/* ================================================================ */}
                 <div className="hidden md:block">
                     <div className="overflow-x-auto">
                         <div>
-                            {/* [CORREÇÃO] Aplicada classe de texto dark mode */}
                             <div className="grid grid-cols-[60px_repeat(12,minmax(80px,1fr))] gap-1 text-center font-bold text-sm mb-2 text-gray-300">
                                 <div>Year</div>
                                 {shortMonths.map(month => <div key={month}>{month}</div>)}
                             </div>
-
-                            {/* Linhas com os resultados */}
                             <div className="space-y-1">
                                 {years.map(year => (
                                     <div key={year} className="grid grid-cols-[60px_repeat(12,minmax(80px,1fr))] gap-1 text-center text-xs items-center">
-                                        {/* [CORREÇÃO] Aplicada classe de texto dark mode */}
                                         <div className="font-bold text-gray-200">{year}</div>
                                         {shortMonths.map((_, monthIndex) => {
                                             const value = data[year]?.[monthIndex];
                                             const hasValue = typeof value === 'number';
-
-                                            // [CORREÇÃO] Corrigido o background para dark mode
                                             const cellColor = hasValue
-                                                ? (value >= 0 ? 'bg-green-600/90' : 'bg-red-600/90') // Suavizado
-                                                : 'bg-slate-700'; // Alterado de bg-gray-200
+                                                ? (value >= 0 ? 'bg-green-600/90' : 'bg-red-600/90')
+                                                : 'bg-slate-700';
 
                                             return (
                                                 <div key={monthIndex} className={`p-3 rounded ${cellColor}`}>
@@ -169,11 +154,10 @@ const MonthlyPerformanceTable = ({ data }: { data: { [year: number]: { [month: n
                                                             decimalScale={2}
                                                             fixedDecimalScale
                                                             prefix="$ "
-                                                            className="text-white font-medium" // Garante texto branco
+                                                            className="text-white font-medium"
                                                         />
                                                     ) : (
-                                                        // [CORREÇÃO] Corrigida cor do texto para dark mode
-                                                        <span className="text-slate-500">-</span> // Alterado de text-gray-500
+                                                        <span className="text-slate-500">-</span>
                                                     )}
                                                 </div>
                                             );
@@ -185,25 +169,17 @@ const MonthlyPerformanceTable = ({ data }: { data: { [year: number]: { [month: n
                     </div>
                 </div>
 
-                {/* ================================================================ */}
-                {/* VISTA PARA MOBILE (lista) - Visível até 'md' (768px)         */}
-                {/* ================================================================ */}
                 <div className="md:hidden">
                     {years.map(year => (
                         <div key={year} className="mb-4">
-                            {/* [CORREÇÃO] Corrigido background e texto para dark mode */}
                             <h4 className="text-center font-bold text-lg p-2 bg-slate-700 text-gray-200 rounded-md mb-2">{year}</h4>
                             <div className="space-y-1">
                                 {months.map((month, monthIndex) => {
                                     const value = data[year]?.[monthIndex];
-                                    if (typeof value !== 'number') return null; // Não mostra o mês se não houver dados
-
+                                    if (typeof value !== 'number') return null;
                                     const textColor = value >= 0 ? 'text-green-500' : 'text-red-500';
-
                                     return (
-                                        // [CORREÇÃO] Corrigida borda para dark mode
                                         <div key={monthIndex} className="flex justify-between items-center p-2 border-b border-slate-700">
-                                            {/* [CORREÇÃO] Corrigido texto para dark mode */}
                                             <span className="text-gray-300">{month}</span>
                                             <span className={`font-semibold ${textColor}`}>
                                                 <NumericFormat
@@ -223,51 +199,44 @@ const MonthlyPerformanceTable = ({ data }: { data: { [year: number]: { [month: n
                         </div>
                     ))}
                 </div>
-
             </CardContent>
         </Card>
     );
 };
 
-
-
 function DashboardContent() {
-
     const { width } = useWindowSize();
     const isMobile = width ? width < 768 : false;
     const searchParams = useSearchParams();
-    const roboNome = searchParams.get('id'); // Este é o ID do robô/portfólio
+    const roboNome = searchParams.get('id');
     const origem = searchParams.get('origem');
 
-    const { user } = useAuth(); //
-    const router = useRouter(); //
+    const { user } = useAuth();
+    const router = useRouter();
 
-    const [nomePortfolioExibicao, setNomePortfolioExibicao] = useState<string | null>(null); //
+    const [nomePortfolioExibicao, setNomePortfolioExibicao] = useState<string | null>(null);
+    const [sidebarAberta, setSidebarAberta] = useState(false);
+    const [csvData, setCsvData] = useState<CsvData[]>([]);
+    const [carregandoDados, setCarregandoDados] = useState(true);
+    const [abaAtiva, setAbaAtiva] = useState<Aba>('resultados');
 
-    const [sidebarAberta, setSidebarAberta] = useState(false); //
-    const [csvData, setCsvData] = useState<CsvData[]>([]); //
-    const [carregandoDados, setCarregandoDados] = useState(true); //
-    const [abaAtiva, setAbaAtiva] = useState<Aba>('resultados'); //
+    const [estrategias, setEstrategias] = useState<string>('');
+    const [historico, setHistorico] = useState<string>('');
 
-    const [estrategias, setEstrategias] = useState<string>(''); //
-    const [historico, setHistorico] = useState<string>(''); //
+    const [descricao, setDescricao] = useState('');
+    const [mercado, setMercado] = useState('');
+    const [ativo, setAtivo] = useState('');
+    const [lucroTotalEquity, setLucroTotalEquity] = useState<number>(0);
+    const [mediaMensalEquity, setMediaMensalEquity] = useState<number>(0);
+    const [fatorLucro, setFatorLucro] = useState<number>(0);
+    const [taxaAcerto, setTaxaAcerto] = useState<number>(0);
+    const [fatorRecuperacao, setFatorRecuperacao] = useState<number>(0);
+    const [payoff, setPayoff] = useState<number>(0);
+    const [avgGain, setAvgGain] = useState<number>(0);
+    const [avgLoss, setAvgLoss] = useState<number>(0);
 
-    const [descricao, setDescricao] = useState(''); //
-    const [mercado, setMercado] = useState(''); //
-    const [ativo, setAtivo] = useState(''); //
-    const [lucroTotalEquity, setLucroTotalEquity] = useState<number>(0); //
-    const [mediaMensalEquity, setMediaMensalEquity] = useState<number>(0); //
-    const [fatorLucro, setFatorLucro] = useState<number>(0); //
-    const [taxaAcerto, setTaxaAcerto] = useState<number>(0); //
-    const [fatorRecuperacao, setFatorRecuperacao] = useState<number>(0); //
-    const [payoff, setPayoff] = useState<number>(0); //
-    const [avgGain, setAvgGain] = useState<number>(0); //
-    const [avgLoss, setAvgLoss] = useState<number>(0); //
-    // Adicione esta função no seu componente
     const shortenName = (name: string, maxLength = 20) => {
         if (name.length <= maxLength) return name;
-
-        // Tenta abreviar palavras no meio
         const words = name.split(' ');
         if (words.length > 2) {
             let shortened = words[0];
@@ -276,64 +245,60 @@ function DashboardContent() {
                 shortened += ` ${words[i].charAt(0)}.`;
             }
             shortened += ` ${words[words.length - 1]}`;
-            if (shortened.length <= maxLength + 3) return shortened; // Permite um pouco mais se abreviado
+            if (shortened.length <= maxLength + 3) return shortened;
         }
-
-        // Se ainda for muito longo, simplesmente trunca
         return name.substring(0, maxLength - 3) + '...';
     };
-    const [drawdownInfo, setDrawdownInfo] = useState<{ //
-        valor: number; //
-        inicio: string; //
-        fim: string; //
-        maiorLoss: { valor: number; data: string }; //
+
+    const [drawdownInfo, setDrawdownInfo] = useState<{
+        valor: number;
+        inicio: string;
+        fim: string;
+        maiorLoss: { valor: number; data: string };
     } | null>(null);
-    const [maiorGainDiario, setMaiorGainDiario] = useState<{ valor: number; data: string } | null>(null); //
-    const [lucroAno, setLucroAno] = useState<{ ano: string; lucro: number }[]>([]); //
-    const [maiorMes, setMaiorMes] = useState<{ valor: number; data: Date }>({ valor: 0, data: new Date() }); //
-    const [piorMes, setPiorMes] = useState<{ valor: number; data: Date }>({ valor: 0, data: new Date() }); //
-    const [diasPositivos, setDiasPositivos] = useState<number>(0); //
-    const [diasNegativos, setDiasNegativos] = useState<number>(0); //
-    const [estagnacaoInfo, setEstagnacaoInfo] = useState<{ //
-        dias: number; //
-        inicio: string; //
-        fim: string; //
+    const [maiorGainDiario, setMaiorGainDiario] = useState<{ valor: number; data: string } | null>(null);
+    const [lucroAno, setLucroAno] = useState<{ ano: string; lucro: number }[]>([]);
+    const [maiorMes, setMaiorMes] = useState<{ valor: number; data: Date }>({ valor: 0, data: new Date() });
+    const [piorMes, setPiorMes] = useState<{ valor: number; data: Date }>({ valor: 0, data: new Date() });
+    const [diasPositivos, setDiasPositivos] = useState<number>(0);
+    const [diasNegativos, setDiasNegativos] = useState<number>(0);
+    const [estagnacaoInfo, setEstagnacaoInfo] = useState<{
+        dias: number;
+        inicio: string;
+        fim: string;
     } | null>(null);
-    const [saldoInicial, setSaldoInicial] = useState<number>(0); //
-    const [cagr, setCagr] = useState<number>(0); //
-    const [drawdownMedioPercentual, setDrawdownMedioPercentual] = useState<number>(0); //
-    const [sampleErrorPercentual, setSampleErrorPercentual] = useState<number>(0); //
-    const [var95, setVar95] = useState<{ valor: number; porcentagem: number }>({ valor: 0, porcentagem: 0 }); //
-    const [medianaRetornosMensais, setMedianaRetornosMensais] = useState<{ valor: number; porcentagem: number }>({ valor: 0, porcentagem: 0 }); //
-    const [desvioPadrao, setDesvioPadrao] = useState<{ //
-        retorno: { valor: number; porcentagem: number }; //
-        drawdown: { valor: number; porcentagem: number }; //
+    const [saldoInicial, setSaldoInicial] = useState<number>(0);
+    const [cagr, setCagr] = useState<number>(0);
+    const [drawdownMedioPercentual, setDrawdownMedioPercentual] = useState<number>(0);
+    const [sampleErrorPercentual, setSampleErrorPercentual] = useState<number>(0);
+    const [var95, setVar95] = useState<{ valor: number; porcentagem: number }>({ valor: 0, porcentagem: 0 });
+    const [medianaRetornosMensais, setMedianaRetornosMensais] = useState<{ valor: number; porcentagem: number }>({ valor: 0, porcentagem: 0 });
+    const [desvioPadrao, setDesvioPadrao] = useState<{
+        retorno: { valor: number; porcentagem: number };
+        drawdown: { valor: number; porcentagem: number };
     }>({
-        retorno: { valor: 0, porcentagem: 0 }, //
-        drawdown: { valor: 0, porcentagem: 0 }, //
+        retorno: { valor: 0, porcentagem: 0 },
+        drawdown: { valor: 0, porcentagem: 0 },
     });
-    const [daliobotScore, setDaliobotScore] = useState<number | null>(null); //
-    const [daliobotFactor, setDaliobotFactor] = useState<number | null>(null); //
+    const [daliobotScore, setDaliobotScore] = useState<number | null>(null);
+    const [daliobotFactor, setDaliobotFactor] = useState<number | null>(null);
 
     const [showDistribuicaoPopup, setShowDistribuicaoPopup] = useState(false);
     const [showDistribuicaoPopupDiario, setShowDistribuicaoPopupDiario] = useState(false);
     const [distributionGranularity, setDistributionGranularity] = useState<'diario' | 'mensal' | 'anual'>('diario');
 
-    // Constantes de Estilo para Gráficos
-    const chartTextFill = "#94a3b8"; // slate-400
-    const chartGridStroke = "#334155"; // slate-700
+    const chartTextFill = "#94a3b8";
+    const chartGridStroke = "#334155";
     const chartTooltipWrapperStyle: React.CSSProperties = {
-        backgroundColor: '#1e293b', // slate-800
-        border: '1px solid #334155', // slate-700
+        backgroundColor: '#1e293b',
+        border: '1px solid #334155',
         borderRadius: '8px',
-        color: '#e2e8f0', // slate-200
+        color: '#e2e8f0',
     };
     const chartTooltipContentStyle: React.CSSProperties = {
         backgroundColor: 'transparent',
         border: 'none',
     };
-
-    // ▼▼▼ ADICIONE ESTES DOIS BLOCOS DE CÓDIGO ▼▼▼
 
     const advancedDistributionData = useMemo(() => {
         try {
@@ -426,204 +391,165 @@ function DashboardContent() {
         }).filter((item): item is { x: number, y: number } => item !== null);
     }, [csvData]);
 
-    const [showMonteCarloPopup, setShowMonteCarloPopup] = useState(false); //
-    const [showStatsPopup, setShowStatsPopup] = useState(false); //
-    const [showRiskPopup, setShowRiskPopup] = useState(false); //
-    const [showDrawdownPopup, setShowDrawdownPopup] = useState(false); //
+    const [showMonteCarloPopup, setShowMonteCarloPopup] = useState(false);
+    const [showStatsPopup, setShowStatsPopup] = useState(false);
+    const [showRiskPopup, setShowRiskPopup] = useState(false);
+    const [showDrawdownPopup, setShowDrawdownPopup] = useState(false);
     const [showLucroCurvePopup, setShowLucroCurvePopup] = useState(false);
-    // NOVO ESTADO ADICIONADO
     const [showDrawdownVisible, setShowDrawdownVisible] = useState(false);
 
-
-
-    // States for Correlation Popup
     const [showCorrelationPopup, setShowCorrelationPopup] = useState(false);
     const [correlationMatrix, setCorrelationMatrix] = useState<number[][] | null>(null);
     const [correlationStrategyNames, setCorrelationStrategyNames] = useState<string[]>([]);
     const [loadingCorrelations, setLoadingCorrelations] = useState(false);
     const [correlationError, setCorrelationError] = useState<string | null>(null);
 
-
-    const formatarMesAno = useCallback((data: Date | string) => { //
-        const dateObj = typeof data === 'string' ? new Date(data) : data; //
-        if (!dateObj || isNaN(dateObj.getTime())) return '-'; //
-        return dateObj.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); //
+    const formatarMesAno = useCallback((data: Date | string) => {
+        const dateObj = typeof data === 'string' ? new Date(data) : data;
+        if (!dateObj || isNaN(dateObj.getTime())) return '-';
+        return dateObj.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     }, []);
     const [monthlyPerformanceData, setMonthlyPerformanceData] = useState<{ [year: number]: { [month: number]: number } }>({});
 
-    const calcularMetricasDependentes = useCallback(() => { //
-        if (csvData.length === 0) { //
-            setCagr(0); //
-            setDrawdownMedioPercentual(0); //
-            setSampleErrorPercentual(0); //
-            setVar95({ valor: 0, porcentagem: 0 }); //
-            setMedianaRetornosMensais({ valor: 0, porcentagem: 0 }); //
-            setDesvioPadrao({ //
-                retorno: { valor: 0, porcentagem: 0 }, //
-                drawdown: { valor: 0, porcentagem: 0 }, //
+    const calcularMetricasDependentes = useCallback(() => {
+        if (csvData.length === 0) {
+            setCagr(0);
+            setDrawdownMedioPercentual(0);
+            setSampleErrorPercentual(0);
+            setVar95({ valor: 0, porcentagem: 0 });
+            setMedianaRetornosMensais({ valor: 0, porcentagem: 0 });
+            setDesvioPadrao({
+                retorno: { valor: 0, porcentagem: 0 },
+                drawdown: { valor: 0, porcentagem: 0 },
             });
-            setDaliobotScore(null); //
-            setDaliobotFactor(null); //
-            return; //
+            setDaliobotScore(null);
+            setDaliobotFactor(null);
+            return;
         }
 
-        const saldoInicialParaCalculo = saldoInicial > 0 ? saldoInicial : (csvData[0]?.EQUITY || 1); //
-        const equityInicialDaEstrategia = csvData[0]?.EQUITY || 0; //
-        const equityFinalDaEstrategia = csvData[csvData.length - 1]?.EQUITY || 0; //
+        const saldoInicialParaCalculo = saldoInicial > 0 ? saldoInicial : (csvData[0]?.EQUITY || 1);
+        const equityInicialDaEstrategia = csvData[0]?.EQUITY || 0;
+        const equityFinalDaEstrategia = csvData[csvData.length - 1]?.EQUITY || 0;
 
-        if (equityInicialDaEstrategia <= 0 && saldoInicial <= 0) { //
-            setCagr(0); //
-            setDrawdownMedioPercentual(0); //
-            setSampleErrorPercentual(0); //
-            setVar95({ valor: 0, porcentagem: 0 }); //
-            setMedianaRetornosMensais({ valor: 0, porcentagem: 0 }); //
-            setDesvioPadrao({ //
-                retorno: { valor: 0, porcentagem: 0 }, //
-                drawdown: { valor: 0, porcentagem: 0 }, //
-            });
-            setDaliobotScore(null); //
-            setDaliobotFactor(null); //
-            return; //
-        }
+        if (equityInicialDaEstrategia <= 0 && saldoInicial <= 0) return;
 
-        const primeiraData = new Date(csvData[0].DATE); //
-        const ultimaData = new Date(csvData[csvData.length - 1].DATE); //
-        const diffEmMs = ultimaData.getTime() - primeiraData.getTime(); //
-        const diffEmDias = diffEmMs / (1000 * 60 * 60 * 24); //
-        const anos = diffEmDias > 0 ? diffEmDias / 365 : 0; //
+        const primeiraData = new Date(csvData[0].DATE);
+        const ultimaData = new Date(csvData[csvData.length - 1].DATE);
+        const diffEmMs = ultimaData.getTime() - primeiraData.getTime();
+        const diffEmDias = diffEmMs / (1000 * 60 * 60 * 24);
+        const anos = diffEmDias > 0 ? diffEmDias / 365 : 0;
 
-        let cagrCalculado = 0; //
-        if (anos > 0 && equityInicialDaEstrategia > 0 && equityFinalDaEstrategia >= 0) { //
-            const ratio = equityFinalDaEstrategia / equityInicialDaEstrategia; //
-            if (ratio >= 0) { //
-                cagrCalculado = Math.pow(ratio, 1 / anos) - 1; //
+        let cagrCalculado = 0;
+        if (anos > 0 && equityInicialDaEstrategia > 0 && equityFinalDaEstrategia >= 0) {
+            const ratio = equityFinalDaEstrategia / equityInicialDaEstrategia;
+            if (ratio >= 0) {
+                cagrCalculado = Math.pow(ratio, 1 / anos) - 1;
             }
         }
-        setCagr(cagrCalculado * 100); //
+        setCagr(cagrCalculado * 100);
 
-        const retornosDiariosPercentuais = csvData.slice(1).map((row, i) => { //
-            const prevEquity = csvData[i].EQUITY; //
-            return prevEquity !== 0 ? (row.EQUITY - prevEquity) / prevEquity : 0; //
-        }).filter(r => !isNaN(r) && isFinite(r)); //
+        const retornosDiariosPercentuais = csvData.slice(1).map((row, i) => {
+            const prevEquity = csvData[i].EQUITY;
+            return prevEquity !== 0 ? (row.EQUITY - prevEquity) / prevEquity : 0;
+        }).filter(r => !isNaN(r) && isFinite(r));
 
-        const drawdownsPercentuaisCalculados: number[] = []; //
-        let picoEquityAtual = csvData[0]?.EQUITY || 0; //
-        let fundoEquityAtual = picoEquityAtual; //
+        const drawdownsPercentuaisCalculados: number[] = [];
+        let picoEquityAtual = csvData[0]?.EQUITY || 0;
+        let fundoEquityAtual = picoEquityAtual;
 
-        for (const row of csvData) { //
-            if (row.EQUITY > picoEquityAtual) { //
-                if (fundoEquityAtual < picoEquityAtual && picoEquityAtual !== 0) { //
-                    const drawdownPercentual = (fundoEquityAtual - picoEquityAtual) / picoEquityAtual; //
-                    drawdownsPercentuaisCalculados.push(drawdownPercentual); //
+        for (const row of csvData) {
+            if (row.EQUITY > picoEquityAtual) {
+                if (fundoEquityAtual < picoEquityAtual && picoEquityAtual !== 0) {
+                    const drawdownPercentual = (fundoEquityAtual - picoEquityAtual) / picoEquityAtual;
+                    drawdownsPercentuaisCalculados.push(drawdownPercentual);
                 }
-                picoEquityAtual = row.EQUITY; //
-                fundoEquityAtual = picoEquityAtual; //
+                picoEquityAtual = row.EQUITY;
+                fundoEquityAtual = picoEquityAtual;
             } else {
-                fundoEquityAtual = Math.min(fundoEquityAtual, row.EQUITY); //
+                fundoEquityAtual = Math.min(fundoEquityAtual, row.EQUITY);
             }
         }
-        if (fundoEquityAtual < picoEquityAtual && picoEquityAtual !== 0) { //
-            const drawdownPercentual = (fundoEquityAtual - picoEquityAtual) / picoEquityAtual; //
-            drawdownsPercentuaisCalculados.push(drawdownPercentual); //
+        if (fundoEquityAtual < picoEquityAtual && picoEquityAtual !== 0) {
+            const drawdownPercentual = (fundoEquityAtual - picoEquityAtual) / picoEquityAtual;
+            drawdownsPercentuaisCalculados.push(drawdownPercentual);
         }
 
-        const drawdownMedioCalc = drawdownsPercentuaisCalculados.length > 0 //
-            ? drawdownsPercentuaisCalculados.reduce((a, b) => a + b, 0) / drawdownsPercentuaisCalculados.length //
-            : 0; //
-        setDrawdownMedioPercentual(Math.abs(drawdownMedioCalc) * 100); //
-
-        const mediaRetornosDiarios = retornosDiariosPercentuais.length > 0 ? retornosDiariosPercentuais.reduce((a, b) => a + b, 0) / retornosDiariosPercentuais.length : 0; //
-        const varianciaRetornos = retornosDiariosPercentuais.length > 0 ? retornosDiariosPercentuais.reduce((sum, r) => sum + Math.pow(r - mediaRetornosDiarios, 2), 0) / retornosDiariosPercentuais.length : 0; //
-        const dpRetornosDiarios = Math.sqrt(varianciaRetornos); //
-        setSampleErrorPercentual(dpRetornosDiarios * 100); //
-
-        const retornosDiariosOrdenados = [...retornosDiariosPercentuais].sort((a, b) => a - b); //
-        const indexVar = Math.floor(retornosDiariosOrdenados.length * 0.05); //
-        const varPercentual = retornosDiariosOrdenados[indexVar] || 0; //
-        setVar95({ //
-            valor: Math.abs(varPercentual * saldoInicialParaCalculo), //
-            porcentagem: Math.abs(varPercentual * 100), //
-        });
-
-        const lucroMensalMap = new Map<string, number>(); //
-        csvData.forEach((row, i) => { //
-            if (i === 0) return; //
-            const data = new Date(row.DATE); //
-            const key = `${data.getFullYear()}-${data.getMonth()}`; //
-            const prev = csvData[i - 1]; //
-            const diferenca = row.EQUITY - prev.EQUITY; //
-            lucroMensalMap.set(key, (lucroMensalMap.get(key) || 0) + diferenca); //
-        });
-        const lucrosMensaisArray = Array.from(lucroMensalMap.values()).sort((a, b) => a - b); //
-        let medianaLucroMensal = 0; //
-        if (lucrosMensaisArray.length > 0) { //
-            const mid = Math.floor(lucrosMensaisArray.length / 2); //
-            medianaLucroMensal = lucrosMensaisArray.length % 2 === 0 //
-                ? (lucrosMensaisArray[mid - 1] + lucrosMensaisArray[mid]) / 2 //
-                : lucrosMensaisArray[mid]; //
-        }
-        setMedianaRetornosMensais({ //
-            valor: medianaLucroMensal, //
-            porcentagem: saldoInicialParaCalculo !== 0 ? (medianaLucroMensal / saldoInicialParaCalculo) * 100 : 0, //
-        });
-
-        const varianciaDrawdowns = drawdownsPercentuaisCalculados.length > 0 ? drawdownsPercentuaisCalculados.reduce((sum, dd) => sum + Math.pow(dd - drawdownMedioCalc, 2), 0) / drawdownsPercentuaisCalculados.length : 0; //
-        const dpDrawdowns = Math.sqrt(varianciaDrawdowns); //
-
-        setDesvioPadrao({ //
-            retorno: { //
-                valor: dpRetornosDiarios * saldoInicialParaCalculo, //
-                porcentagem: dpRetornosDiarios * 100, //
-            },
-            drawdown: { //
-                valor: dpDrawdowns * saldoInicialParaCalculo, //
-                porcentagem: dpDrawdowns * 100, //
-            },
-        });
-
-        // 1. CÁLCULO DO RISCO (DRAWDOWN)
-        // Pega o pior drawdown histórico (mais negativo) e converte para positivo.
-        const piorDD = drawdownsPercentuaisCalculados.length > 0
-            ? Math.min(...drawdownsPercentuaisCalculados)
+        const drawdownMedioCalc = drawdownsPercentuaisCalculados.length > 0
+            ? drawdownsPercentuaisCalculados.reduce((a, b) => a + b, 0) / drawdownsPercentuaisCalculados.length
             : 0;
+        setDrawdownMedioPercentual(Math.abs(drawdownMedioCalc) * 100);
+
+        const mediaRetornosDiarios = retornosDiariosPercentuais.length > 0 ? retornosDiariosPercentuais.reduce((a, b) => a + b, 0) / retornosDiariosPercentuais.length : 0;
+        const varianciaRetornos = retornosDiariosPercentuais.length > 0 ? retornosDiariosPercentuais.reduce((sum, r) => sum + Math.pow(r - mediaRetornosDiarios, 2), 0) / retornosDiariosPercentuais.length : 0;
+        const dpRetornosDiarios = Math.sqrt(varianciaRetornos);
+        setSampleErrorPercentual(dpRetornosDiarios * 100);
+
+        const retornosDiariosOrdenados = [...retornosDiariosPercentuais].sort((a, b) => a - b);
+        const indexVar = Math.floor(retornosDiariosOrdenados.length * 0.05);
+        const varPercentual = retornosDiariosOrdenados[indexVar] || 0;
+        setVar95({
+            valor: Math.abs(varPercentual * saldoInicialParaCalculo),
+            porcentagem: Math.abs(varPercentual * 100),
+        });
+
+        const lucroMensalMap = new Map<string, number>();
+        csvData.forEach((row, i) => {
+            if (i === 0) return;
+            const data = new Date(row.DATE);
+            const key = `${data.getFullYear()}-${data.getMonth()}`;
+            const prev = csvData[i - 1];
+            const diferenca = row.EQUITY - prev.EQUITY;
+            lucroMensalMap.set(key, (lucroMensalMap.get(key) || 0) + diferenca);
+        });
+        const lucrosMensaisArray = Array.from(lucroMensalMap.values()).sort((a, b) => a - b);
+        let medianaLucroMensal = 0;
+        if (lucrosMensaisArray.length > 0) {
+            const mid = Math.floor(lucrosMensaisArray.length / 2);
+            medianaLucroMensal = lucrosMensaisArray.length % 2 === 0
+                ? (lucrosMensaisArray[mid - 1] + lucrosMensaisArray[mid]) / 2
+                : lucrosMensaisArray[mid];
+        }
+        setMedianaRetornosMensais({
+            valor: medianaLucroMensal,
+            porcentagem: saldoInicialParaCalculo !== 0 ? (medianaLucroMensal / saldoInicialParaCalculo) * 100 : 0,
+        });
+
+        const varianciaDrawdowns = drawdownsPercentuaisCalculados.length > 0 ? drawdownsPercentuaisCalculados.reduce((sum, dd) => sum + Math.pow(dd - drawdownMedioCalc, 2), 0) / drawdownsPercentuaisCalculados.length : 0;
+        const dpDrawdowns = Math.sqrt(varianciaDrawdowns);
+
+        setDesvioPadrao({
+            retorno: {
+                valor: dpRetornosDiarios * saldoInicialParaCalculo,
+                porcentagem: dpRetornosDiarios * 100,
+            },
+            drawdown: {
+                valor: dpDrawdowns * saldoInicialParaCalculo,
+                porcentagem: dpDrawdowns * 100,
+            },
+        });
+
+        const piorDD = drawdownsPercentuaisCalculados.length > 0 ? Math.min(...drawdownsPercentuaisCalculados) : 0;
         const maxDDAbsoluto = Math.abs(piorDD);
 
-        // 2. SUB-SCORE DE RETORNO (Peso 35%)
-        // Meta: 50% de CAGR anual garante nota 10.
         const notaRetorno = Math.min(10, Math.max(0, (cagrCalculado * 100) / 5));
-
-        // 3. SUB-SCORE DE RISCO (Peso 45%)
-        // Multiplicador 20: Drawdown de 50% zera a nota.
-        // Ex: DD de 20% -> 10 - 4 = Nota 6.0
         const notaRisco = Math.max(0, 10 - (maxDDAbsoluto * 20));
-
-        // 4. SUB-SCORE DE ESTABILIDADE (Peso 20%) - Sharpe Simplificado
-        // Sharpe diário de 0.1 (excelente) dá nota 10.
         const sharpeDiario = dpRetornosDiarios > 0 ? (mediaRetornosDiarios / dpRetornosDiarios) : 0;
         const notaEstabilidade = Math.min(10, Math.max(0, sharpeDiario * 100));
 
-        // 5. CÁLCULO FINAL PONDERADO
-        // Pesos: 35% Retorno | 45% Risco | 20% Estabilidade
         const scoreFinal = (notaRetorno * 0.35) + (notaRisco * 0.45) + (notaEstabilidade * 0.20);
-
-        // Garante que fique entre 0 e 10 e define o estado
         setDaliobotScore(Math.min(10, Math.max(0, Number(scoreFinal.toFixed(2)))));
 
-        // Fator de Dalio (Apenas informativo)
         const fatorCalculado = mediaRetornosDiarios / (dpRetornosDiarios || 1e-9);
         setDaliobotFactor(Number(fatorCalculado.toFixed(2)));
 
-    }, [csvData, saldoInicial]); //
+    }, [csvData, saldoInicial]);
 
-    useEffect(() => { //
-        if (csvData.length > 0) { //
-            calcularMetricasDependentes(); //
+    useEffect(() => {
+        if (csvData.length > 0) {
+            calcularMetricasDependentes();
         }
-    }, [csvData, saldoInicial, calcularMetricasDependentes]); //
+    }, [csvData, saldoInicial, calcularMetricasDependentes]);
 
-    // ==================================================================
-    // FUNÇÃO QUE CALCULA MÉTRICAS COM DADOS (Mantida)
-    // ==================================================================
     const calcularMetricasComDados = (dadosParaCalculo: CsvData[]) => {
         if (dadosParaCalculo.length > 0) {
             const eqInicial = dadosParaCalculo[0].EQUITY;
@@ -721,8 +647,7 @@ function DashboardContent() {
                 if (i === 0) return;
                 const data = new Date(row.DATE);
                 const key = `${data.getFullYear()}-${data.getMonth()}`;
-                const prev = dadosParaCalculo[i - 1];
-                const diferenca = row.EQUITY - prev.EQUITY;
+                const diferenca = row.EQUITY - dadosParaCalculo[i - 1].EQUITY;
 
                 if (lucroMensalMapDetalhado.has(key)) {
                     lucroMensalMapDetalhado.get(key)!.acumulado += diferenca;
@@ -799,9 +724,7 @@ function DashboardContent() {
             }
         }
     };
-    // ==================================================================
-    // BLOCO DE CÓDIGO ATUALIZADO (Combina Lucro e Drawdown em Percentual)
-    // ==================================================================
+
     const chartData = useMemo(() => {
         if (csvData.length === 0) return [];
 
@@ -817,13 +740,14 @@ function DashboardContent() {
                 ...row,
                 LUCRO: row.EQUITY - initialEquity,
                 DD: DD_percentual,
-                timestamp: new Date(row.DATE).getTime(), // ✅ campo numérico para o eixo X
+                timestamp: new Date(row.DATE).getTime(),
             };
         });
     }, [csvData]);
 
-
-
+    // =========================================================================
+    //  NOVA LÓGICA DE FETCH (ADAPTADA PARA DADOS HTML SALVOS NO FIREBASE)
+    // =========================================================================
     useEffect(() => {
         const fetchRoboData = async () => {
             if (!user || !roboNome) {
@@ -861,88 +785,117 @@ function DashboardContent() {
                         setEstrategias('No defined strategy');
                     }
 
-                    let dataInicioMaisRecente: Date | null = null;
+                    // --- CONSOLIDAÇÃO DE DADOS BASEADA EM HTML ---
                     if (robosDoPortfolio.length > 0) {
                         const promises = robosDoPortfolio.map(nomeEstrategia =>
                             get(ref(db, `estrategias/${user.uid}/${nomeEstrategia}`))
                         );
                         const resultados = await Promise.all(promises);
-                        const datasDeInicio: Date[] = [];
+                        
+                        // Lista mestre de eventos: { timestamp, lucroDoTrade }
+                        // Para recriar a curva de equity combinada
+                        let masterTimeline: { date: Date; profit: number }[] = [];
+                        let totalInitialDeposit = 0;
+                        let foundAnyData = false;
 
                         resultados.forEach(snapshotEstrategia => {
                             if (snapshotEstrategia.exists()) {
                                 const dadosEstrategia = snapshotEstrategia.val();
-                                const primeiraLinha = dadosEstrategia.dadosCSV?.[0] || Object.values(dadosEstrategia.dadosCSV || {})[0];
-                                if (primeiraLinha && primeiraLinha['<DATE>']) {
-                                    // Aplicando a correção de data aqui também
-                                    const parsableDateStr = String(primeiraLinha['<DATE>']).replace(/\./g, '-');
-                                    datasDeInicio.push(new Date(parsableDateStr));
+                                foundAnyData = true;
+
+                                // Pega o depósito inicial (salvo pelo add/page.tsx)
+                                const depositoInicial = Number(dadosEstrategia.depositoInicial || 0);
+                                totalInitialDeposit += depositoInicial;
+
+                                const rawCsv: HtmlStrategyData[] = dadosEstrategia.dadosCSV || [];
+                                if (Array.isArray(rawCsv) && rawCsv.length > 0) {
+                                    // Precisamos extrair o lucro/perda de cada trade individual.
+                                    // O HTML salva o Balanço Acumulado. 
+                                    // Trade 1 Profit = Balanço[1] - DepositoInicial
+                                    // Trade N Profit = Balanço[N] - Balanço[N-1]
+                                    
+                                    let previousBalance = depositoInicial;
+
+                                    rawCsv.forEach((row) => {
+                                        // O add/page.tsx salva como string "5000.00"
+                                        const currentBalance = parseFloat(row["<BALANCE>"]);
+                                        const dateStr = row["<DATE>"]; // YYYY-MM-DD HH:mm:ss
+                                        
+                                        if (!isNaN(currentBalance) && dateStr) {
+                                            const profit = currentBalance - previousBalance;
+                                            masterTimeline.push({
+                                                date: new Date(dateStr),
+                                                profit: profit
+                                            });
+                                            previousBalance = currentBalance;
+                                        }
+                                    });
                                 }
                             }
                         });
 
-                        if (datasDeInicio.length > 0) {
-                            dataInicioMaisRecente = new Date(Math.max.apply(null, datasDeInicio.map(d => d.getTime())));
-                        }
-                    }
-
-                    if (data.dadosConsolidados) {
-                        // ==========================================================
-                        // >> APLICAÇÃO DA CORREÇÃO DE DATA <<
-                        // ==========================================================
-                        const dadosCompletos: CsvData[] = Object.values(data.dadosConsolidados)
-                            .filter((row: any): row is Record<string, any> => row && typeof row === 'object' && Object.keys(row).length > 0 && row['<DATE>'])
-                            .map((row: Record<string, any>) => {
-                                const dateStr = String(row['<DATE>']);
-                                // Substituímos os pontos por hífens para o JS entender a data
-                                const parsableDateStr = dateStr.replace(/\./g, '-');
-                                return {
-                                    DATE: parsableDateStr, // Armazenamos a data já corrigida
-                                    BALANCE: parseFloat(String(row['<BALANCE>']).replace(',', '.') || '0'),
-                                    EQUITY: parseFloat(String(row['<EQUITY>']).replace(',', '.') || '0'),
-                                    'DEPOSIT LOAD': parseFloat(String(row['<DEPOSIT LOAD>']).replace(',', '.') || '0'),
-                                };
-                            })
-                            .sort((a, b) => new Date(a.DATE).getTime() - new Date(b.DATE).getTime());
-
-                        const dadosFiltrados = dataInicioMaisRecente ?
-                            dadosCompletos.filter(row => new Date(row.DATE) >= dataInicioMaisRecente!) :
-                            dadosCompletos;
-
-                        setCsvData(dadosFiltrados);
-
-                        if (dadosFiltrados.length > 0) {
-                            const dataInicioReal = new Date(dadosFiltrados[0].DATE);
-                            const dataInicioRealFormatada = dataInicioReal.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                            const ultimaDataCsv = new Date(dadosFiltrados[dadosFiltrados.length - 1].DATE);
-                            let dataFimFormatada = 'Data Atual';
-                            if (!isNaN(ultimaDataCsv.getTime())) {
-                                dataFimFormatada = ultimaDataCsv.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                            }
-                            setHistorico(`${dataInicioRealFormatada} - ${dataFimFormatada}`);
-                            calcularMetricasComDados(dadosFiltrados);
-                        } else {
+                        if (!foundAnyData || masterTimeline.length === 0) {
                             setCsvData([]);
-                            setHistorico(`From ${dataInicioMaisRecente?.toLocaleDateString('pt-BR') || 'data calculada'} - No backtest data`);
+                            setHistorico('No data available');
+                            setCarregandoDados(false);
+                            return;
                         }
+
+                        // Ordenar cronologicamente
+                        masterTimeline.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+                        // Reconstruir a Equity Curve consolidada
+                        let currentEquity = totalInitialDeposit;
+                        const consolidatedCsv: CsvData[] = [];
+
+                        // Ponto inicial (antes do primeiro trade)
+                        if (masterTimeline.length > 0) {
+                            consolidatedCsv.push({
+                                DATE: new Date(masterTimeline[0].date.getTime() - 1000).toISOString(),
+                                BALANCE: totalInitialDeposit,
+                                EQUITY: totalInitialDeposit,
+                                'DEPOSIT LOAD': 0
+                            });
+                        }
+
+                        // Pontos subsequentes
+                        masterTimeline.forEach(item => {
+                            currentEquity += item.profit;
+                            consolidatedCsv.push({
+                                DATE: item.date.toISOString(),
+                                BALANCE: currentEquity,
+                                EQUITY: currentEquity,
+                                'DEPOSIT LOAD': 0 
+                            });
+                        });
+
+                        setCsvData(consolidatedCsv);
+
+                        // Ajustar Histórico
+                        if (consolidatedCsv.length > 0) {
+                            const inicio = new Date(consolidatedCsv[0].DATE).toLocaleDateString('pt-BR');
+                            const fim = new Date(consolidatedCsv[consolidatedCsv.length - 1].DATE).toLocaleDateString('pt-BR');
+                            setHistorico(`${inicio} - ${fim}`);
+                            
+                            // Recalcular métricas com os dados unificados
+                            calcularMetricasComDados(consolidatedCsv);
+                            setSaldoInicial(totalInitialDeposit);
+                        }
+
                     } else {
-                        setCsvData([]);
-                        const dataInicioFormatada = data.dataCriacao ? new Date(data.dataCriacao).toLocaleDateString('pt-BR') : 'N/A';
-                        setHistorico(`${dataInicioFormatada} - No backtest data`);
+                         // Caso sem robôs no portfolio
+                         setCsvData([]);
+                         setHistorico('No strategies linked');
                     }
+
                 } else {
                     console.error(`Portfolio with ID"${roboNome}" not found.`);
                     setCsvData([]);
                     setNomePortfolioExibicao(roboNome);
-                    setEstrategias('N/A');
-                    setHistorico('N/A');
                 }
             } catch (error) {
                 console.error('Error fetching portfolio data:', error);
                 setCsvData([]);
-                setNomePortfolioExibicao(roboNome);
-                setEstrategias('Error loading');
-                setHistorico('Error loading');
             } finally {
                 setCarregandoDados(false);
             }
@@ -951,6 +904,9 @@ function DashboardContent() {
         fetchRoboData();
     }, [user, roboNome]);
 
+    // =========================================================================
+    //  CORRELAÇÃO ATUALIZADA (LENDO CHAVES COM < >)
+    // =========================================================================
     const fetchAndCalculateCorrelations = useCallback(async () => {
         if (!user || !estrategias || estrategias === 'N/A' || estrategias === 'No defined strategy' || estrategias === 'Error loading') {
             setCorrelationError("There are no defined or valid strategies for calculating correlation.");
@@ -965,52 +921,39 @@ function DashboardContent() {
         const strategyNameList = estrategias.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
         if (strategyNameList.length < 2) {
-            setCorrelationError("São necessárias pelo menos duas estratégias para calcular a correlação.");
+            setCorrelationError("At least two strategies are needed to calculate correlation.");
             setLoadingCorrelations(false);
             setCorrelationMatrix(null);
             setCorrelationStrategyNames(strategyNameList);
             return;
         }
 
-        // Temporariamente define os nomes aqui, será atualizado se algumas não carregarem
         setCorrelationStrategyNames(strategyNameList);
         const db = getDatabase();
-        // strategyName -> {date -> return}
         const allStrategyReturns: Map<string, Map<string, number>> = new Map();
 
         try {
             const promises = strategyNameList.map(async (strategyNameFromList) => {
-                // NOVO CAMINHO: basededados/estrategias/${user.uid}/${strategyNameFromList}
                 const strategyDataRef = ref(db, `estrategias/${user.uid}/${strategyNameFromList}`);
                 const strategySnapshot = await get(strategyDataRef);
 
                 if (strategySnapshot.exists()) {
                     const strategyData = strategySnapshot.val();
-                    // DADOS CSV ESTÃO EM strategyData.dadosCSV
+                    
                     if (strategyData.dadosCSV) {
-                        let rawCsvArray: any[];
-                        if (Array.isArray(strategyData.dadosCSV)) {
-                            rawCsvArray = strategyData.dadosCSV;
-                        } else if (typeof strategyData.dadosCSV === 'object') {
-                            // Se dadosCSV for um objeto de objetos (como era dadosConsolidados)
-                            rawCsvArray = Object.values(strategyData.dadosCSV);
-                        } else {
-                            console.warn(`dadosCSV para a estratégia ${strategyNameFromList} não é um array ou objeto.`);
-                            return; // Pula esta estratégia
-                        }
+                        // Forçamos o tipo para array de HTML data
+                        const rawCsvArray: HtmlStrategyData[] = Array.isArray(strategyData.dadosCSV) 
+                            ? strategyData.dadosCSV 
+                            : Object.values(strategyData.dadosCSV);
 
+                        // Normalização
                         const normalized: CsvData[] = rawCsvArray
-                            .filter((row: any): row is Record<string, any> =>
-                                row && typeof row === 'object' &&
-                                Object.keys(row).length > 0 &&
-                                typeof row['<DATE>'] === 'string' && // Adicionando checagem de tipo para <DATE>
-                                (typeof row['<EQUITY>'] === 'string' || typeof row['<EQUITY>'] === 'number') // Checagem para <EQUITY>
-                            )
-                            .map((row: Record<string, any>) => ({
-                                DATE: String(row['<DATE>']),
-                                BALANCE: parseFloat(String(row['<BALANCE>']).replace(',', '.') || '0'),
-                                EQUITY: parseFloat(String(row['<EQUITY>']).replace(',', '.') || '0'),
-                                'DEPOSIT LOAD': parseFloat(String(row['<DEPOSIT LOAD>']).replace(',', '.') || '0'),
+                            .filter(row => row && row['<DATE>'] && row['<EQUITY>'])
+                            .map(row => ({
+                                DATE: row['<DATE>'],
+                                BALANCE: parseFloat(row['<BALANCE>']),
+                                EQUITY: parseFloat(row['<EQUITY>']),
+                                'DEPOSIT LOAD': 0
                             }))
                             .sort((a, b) => new Date(a.DATE).getTime() - new Date(b.DATE).getTime());
 
@@ -1019,7 +962,8 @@ function DashboardContent() {
                             for (let i = 1; i < normalized.length; i++) {
                                 const prevEquity = normalized[i - 1].EQUITY;
                                 const currentEquity = normalized[i].EQUITY;
-                                if (prevEquity !== 0 && !isNaN(prevEquity) && !isNaN(currentEquity)) { // Checagem extra de NaN
+                                // Calcular retorno diário
+                                if (prevEquity !== 0 && !isNaN(prevEquity) && !isNaN(currentEquity)) {
                                     const dailyReturn = (currentEquity - prevEquity) / prevEquity;
                                     dailyReturns.set(normalized[i].DATE, dailyReturn);
                                 } else {
@@ -1027,47 +971,24 @@ function DashboardContent() {
                                 }
                             }
                             allStrategyReturns.set(strategyNameFromList, dailyReturns);
-                        } else {
-                            console.warn(`Estratégia ${strategyNameFromList} tem menos de 2 pontos de dados normalizados, não é possível calcular retornos.`);
                         }
-                    } else {
-                        console.warn(`dadosCSV não encontrados para a estratégia ${strategyNameFromList} em basededados/estrategias/${user.uid}/${strategyNameFromList}.`);
                     }
-                } else {
-                    console.warn(`Estratégia ${strategyNameFromList} não encontrada em basededados/estrategias/${user.uid}/${strategyNameFromList}.`);
                 }
             });
 
             await Promise.all(promises);
 
-            if (allStrategyReturns.size < strategyNameList.length && allStrategyReturns.size > 0) {
-                console.warn("Não foi possível carregar os dados de retorno para todas as estratégias listadas, mas algumas foram carregadas.");
-            } else if (allStrategyReturns.size === 0 && strategyNameList.length > 0) {
-                console.warn("Não foi possível carregar dados de retorno para NENHUMA das estratégias listadas.");
-            }
-
-
             if (allStrategyReturns.size < 2) {
-                setCorrelationError("Não foi possível obter dados de retorno suficientes para pelo menos duas estratégias.");
+                setCorrelationError("Could not retrieve sufficient data for at least two strategies.");
                 setLoadingCorrelations(false);
                 setCorrelationMatrix(null);
-                // Mantém correlationStrategyNames com a lista original para debug ou informação ao usuário
                 return;
             }
 
             const validStrategyNames = Array.from(allStrategyReturns.keys());
-            setCorrelationStrategyNames(validStrategyNames); // Atualiza com os nomes das estratégias que realmente carregaram
+            setCorrelationStrategyNames(validStrategyNames);
 
             const numStrategies = validStrategyNames.length;
-            // Esta checagem é um pouco redundante se a anterior (allStrategyReturns.size < 2) já foi feita,
-            // mas é uma segurança adicional.
-            if (numStrategies < 2) {
-                setCorrelationError("Dados de retorno válidos foram encontrados para menos de duas estratégias.");
-                setLoadingCorrelations(false);
-                setCorrelationMatrix(null);
-                return;
-            }
-
             const matrix: number[][] = Array(numStrategies).fill(null).map(() => Array(numStrategies).fill(NaN));
 
             for (let i = 0; i < numStrategies; i++) {
@@ -1084,9 +1005,12 @@ function DashboardContent() {
                     if (returns1Map && returns2Map) {
                         const alignedReturns1: number[] = [];
                         const alignedReturns2: number[] = [];
-
+                        
+                        // Encontrar datas em comum
                         const dates1 = new Set(returns1Map.keys());
-                        const commonDates = [...dates1].filter(date => returns2Map.has(date)).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+                        const commonDates = [...dates1]
+                            .filter(date => returns2Map.has(date))
+                            .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
                         if (commonDates.length >= 2) {
                             commonDates.forEach(date => {
@@ -1095,7 +1019,6 @@ function DashboardContent() {
                             });
                             matrix[i][j] = calculatePearsonCorrelation(alignedReturns1, alignedReturns2);
                         } else {
-                            console.warn(`Não há dados em comum suficientes entre ${name1} e ${name2} para calcular correlação.`);
                             matrix[i][j] = NaN;
                         }
                         matrix[j][i] = matrix[i][j];
@@ -1119,51 +1042,19 @@ function DashboardContent() {
         }
     }, [showCorrelationPopup, user, estrategias, fetchAndCalculateCorrelations]);
 
-
-    const monteCarloData = useMemo(() => { //
-        if (csvData.length < 2) return []; //
-
-        const simulations = 100; //
-        const steps = Math.min(60, csvData.length - 1); //
-        const dailyReturns = csvData.slice(1).map((row, i) => { //
-            const prev = csvData[i].EQUITY; //
-            return prev !== 0 ? (row.EQUITY - prev) / prev : 0; //
-        }).filter(v => !isNaN(v) && isFinite(v)); //
-
-        if (dailyReturns.length === 0) return []; //
-
-        const avg = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length; //
-        const stddev = Math.sqrt( //
-            dailyReturns.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / dailyReturns.length //
-        );
-
-        const getRandomColor = () => `rgb(${Math.floor(Math.random() * 200)},${Math.floor(Math.random() * 200)},${Math.floor(Math.random() * 200)})`; //
-
-        return Array.from({ length: simulations }, () => { //
-            const path = [{ step: 0, value: 1 }]; //
-            let currentVal = 1; //
-            for (let i = 1; i < steps; i++) { //
-                const randomFactor = avg + stddev * (Math.random() * 2 - 1); //
-                currentVal *= (1 + randomFactor); //
-                path.push({ step: i, value: Math.max(0, currentVal) }); //
-            }
-            return { path, color: getRandomColor() }; //
-        });
-    }, [csvData]); //
-
-    if (!user && carregandoDados) return <div className="p-4 text-center text-gray-300">Loading authentication...</div>; //
-    if (!user && !carregandoDados) { //
-        if (typeof window !== "undefined") router.push('/login'); //
-        return <div className="p-4 text-center text-gray-300">User not authenticated. Redirecting...</div>; //
+    if (!user && carregandoDados) return <div className="p-4 text-center text-gray-300">Loading authentication...</div>;
+    if (!user && !carregandoDados) {
+        if (typeof window !== "undefined") router.push('/login');
+        return <div className="p-4 text-center text-gray-300">User not authenticated. Redirecting...</div>;
     }
-    if (carregandoDados && !roboNome) { //
-        return <div className="p-4 text-center text-gray-300">Analyzing URL...</div>; //
+    if (carregandoDados && !roboNome) {
+        return <div className="p-4 text-center text-gray-300">Analyzing URL...</div>;
     }
-    if (carregandoDados) { //
-        return <div className="p-4 text-center text-gray-300">Loading portfolio data...</div>; //
+    if (carregandoDados) {
+        return <div className="p-4 text-center text-gray-300">Loading portfolio data...</div>;
     }
 
-    const isCorrelationButtonDisabled = !estrategias || estrategias === 'N/A' || estrategias === 'No defined strategy' || estrategias === 'Error loading' || estrategias.split(',').map(s => s.trim()).filter(s => s.length > 0).length < 2; //
+    const isCorrelationButtonDisabled = !estrategias || estrategias === 'N/A' || estrategias === 'No defined strategy' || estrategias === 'Error loading' || estrategias.split(',').map(s => s.trim()).filter(s => s.length > 0).length < 2;
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-900">
@@ -1231,14 +1122,14 @@ function DashboardContent() {
                             <button
                                 onClick={() => setAbaAtiva('resultados')}
                                 className={`px-3 py-1 text-sm rounded-md transition-colors
-                  ${abaAtiva === 'resultados' ? 'bg-slate-900 text-purple-400 shadow-sm font-semibold' : 'text-gray-300 hover:bg-slate-600'}`}
+                                  ${abaAtiva === 'resultados' ? 'bg-slate-900 text-purple-400 shadow-sm font-semibold' : 'text-gray-300 hover:bg-slate-600'}`}
                             >
                                 Results
                             </button>
                             <button
                                 onClick={() => setAbaAtiva('metricasAvancadas')}
                                 className={`px-3 py-1 text-sm rounded-md transition-colors
-                  ${abaAtiva === 'metricasAvancadas' ? 'bg-slate-900 text-purple-400 shadow-sm font-semibold' : 'text-gray-300 hover:bg-slate-600'}`}
+                                  ${abaAtiva === 'metricasAvancadas' ? 'bg-slate-900 text-purple-400 shadow-sm font-semibold' : 'text-gray-300 hover:bg-slate-600'}`}
                             >
                                 Advanced Metrics
                             </button>
@@ -1247,7 +1138,7 @@ function DashboardContent() {
 
                     {csvData.length === 0 && !carregandoDados && (
                         <div className="text-center text-gray-400 py-10">
-                            No data found for this robot ({nomePortfolioExibicao || roboNome || "ID not specified"}). Check the CSV file or the ID in the URL.
+                            No data found for this robot ({nomePortfolioExibicao || roboNome || "ID not specified"}). Check if the strategies were added correctly.
                         </div>
                     )}
 
@@ -1315,10 +1206,7 @@ function DashboardContent() {
                                             </CardHeader>
 
                                             <CardContent>
-                                                {/* ✅ Wrapper para conter os dois ResponsiveContainer sem erro */}
                                                 <div className="flex flex-col space-y-2">
-
-                                                    {/* === GRÁFICO 1: Lucro Acumulado === */}
                                                     <div className="w-full h-[300px]">
                                                         <div className="w-full h-[300px]">
                                                             <ResponsiveContainer width="100%" height="100%">
@@ -1327,9 +1215,9 @@ function DashboardContent() {
 
                                                                     <XAxis
                                                                         dataKey="timestamp"
-                                                                        type="number"                      // ✅ Novo: eixo numérico
-                                                                        scale="time"                       // ✅ Novo: eixo temporal real
-                                                                        domain={['dataMin', 'dataMax']}    // ✅ Novo: cobre todo o período
+                                                                        type="number"
+                                                                        scale="time"
+                                                                        domain={['dataMin', 'dataMax']}
                                                                         tickFormatter={(timestamp) =>
                                                                             new Date(timestamp).toLocaleDateString("pt-BR", {
                                                                                 day: "2-digit",
@@ -1373,7 +1261,6 @@ function DashboardContent() {
                                                                         contentStyle={chartTooltipContentStyle}
                                                                     />
 
-                                                                    {/* Linha do lucro acumulado */}
                                                                     <Line
                                                                         yAxisId="lucro"
                                                                         type="monotone"
@@ -1389,7 +1276,6 @@ function DashboardContent() {
 
                                                     </div>
 
-                                                    {/* === GRÁFICO 2: Drawdown === */}
                                                     {showDrawdownVisible && (
                                                         <div className="w-full h-[80px]">
                                                             <ResponsiveContainer width="100%" height="100%">
@@ -1404,10 +1290,8 @@ function DashboardContent() {
                                                                     />
 
                                                                     <XAxis
-                                                                        // ✅ ANTES: dataKey="DATE"
-                                                                        // ✅ AGORA: Usar o timestamp numérico para alinhamento com o gráfico principal
                                                                         dataKey="timestamp"
-                                                                        tickFormatter={(timestamp) => // O formatter agora recebe o timestamp
+                                                                        tickFormatter={(timestamp) => 
                                                                             new Date(timestamp).toLocaleDateString("pt-BR", {
                                                                                 day: "2-digit", month: "2-digit", year: "2-digit",
                                                                             })
@@ -1579,7 +1463,6 @@ function DashboardContent() {
                                     </Card>
                                     <MonthlyPerformanceTable data={monthlyPerformanceData} />
 
-                                    {/* Substitua seu card de Distribuição por estes dois */}
                                     <Card className="md:col-span-1 bg-slate-800 border-slate-700">
                                         <CardHeader className="pb-4">
                                             <CardTitle className="text-base font-medium text-white">Distribution of Results</CardTitle>
@@ -1635,7 +1518,6 @@ function DashboardContent() {
 
                             {abaAtiva === 'metricasAvancadas' && (
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    
                                     <Card className="flex items-center p-4 bg-slate-800 border-slate-700">
                                         <img
                                             src="/graph.png"
@@ -1720,8 +1602,6 @@ function DashboardContent() {
                                             <CardTitle className="text-xl text-white">DalioBot Score</CardTitle>
                                         </CardHeader>
                                         <CardContent className="flex flex-col items-center justify-center flex-grow gap-y-4">
-
-                                            {/* Medidor Circular */}
                                             <div className="relative flex-shrink-0 flex items-center justify-center w-32 h-32">
                                                 <svg viewBox="0 0 36 36" className="absolute w-full h-full">
                                                     <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#334155" strokeWidth="3" />
@@ -1738,7 +1618,6 @@ function DashboardContent() {
                                                 <span className="text-4xl font-bold text-white">{daliobotScore !== null ? daliobotScore : '-'}</span>
                                             </div>
 
-                                            {/* Texto Descritivo (sempre centralizado) */}
                                             <div className="text-center">
                                                 <p className="text-2xl font-semibold text-white">
                                                     {origem === 'portfolio' ? '' :
@@ -1760,9 +1639,6 @@ function DashboardContent() {
                         </>
                     )}
 
-                    {/* ▼▼▼ COLE TODO O CÓDIGO DOS POP-UPS AQUI ▼▼▼ */}
-
-                    {/* Pop-up de Distribuição (Histograma Responsivo) */}
                     {showDistribuicaoPopup && (
                         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-2 sm:p-4">
                             <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-slate-700">
@@ -1856,7 +1732,6 @@ function DashboardContent() {
                         </div>
                     )}
 
-                    {/* Pop-up de Resultados Diários (Gráfico de Dispersão) */}
                     {showDistribuicaoPopupDiario && (
                         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-2 sm:p-4">
                             <div className="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-slate-700">
@@ -1902,13 +1777,11 @@ function DashboardContent() {
                                     <button onClick={() => setShowDrawdownPopup(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
                                 </div>
                                 <ResponsiveContainer width="100%" height={400}>
-                                    {/* Nota: O Drawdown Value (em $) é diferente do Drawdown Percentual (%) */}
                                     <LineChart data={chartData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
                                         <XAxis dataKey="DATE" tick={{ fontSize: 10, fill: chartTextFill }}
                                             tickFormatter={(dateStr) => new Date(dateStr).toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' })}
                                             interval="preserveStartEnd" />
-                                        {/* Usamos o YAxis do lucro, mas com domínio negativo, pois o valor absoluto do DD está em `drawdownInfo.valor` */}
                                         <YAxis tickFormatter={(val) => `$ ${Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} tick={{ fontSize: 12, fill: chartTextFill }} />
                                         <Tooltip
                                             labelFormatter={(dateStr) => new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -1931,30 +1804,20 @@ function DashboardContent() {
                                     <button onClick={() => setShowStatsPopup(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
                                 </div>
                                 <div className="space-y-3 text-sm text-gray-300">
-                                    {/* Conteúdo do Popup de Estatísticas */}
-                                    <p><strong>Daily Results:</strong> All performance metrics (win rate, average gain/loss, etc.) are based on the net financial result at the end of each trading day. For example, a 60% win rate means that on 60% of trading days, the outcome was positive.</p>
+                                    <p><strong>Daily Results:</strong> All performance metrics (win rate, average gain/loss, etc.) are based on the net financial result at the end of each trading day.</p>
                                     <p><strong>Net Profit (Equity):</strong> The total net profit generated by the strategy, calculated as the difference between the final and initial equity for the analyzed period.</p>
                                     <p><strong>Average Monthly Profit (Equity):</strong> The total net profit (equity) divided by the number of months in the analysis period.</p>
-                                    <p><strong>Profit Factor:</strong> The ratio of gross profit (the sum of all winning days) to gross loss (the sum of all losing days). Values above 1 indicate that gains exceed losses.</p>
-                                    <p><strong>Win Rate:</strong> The percentage of days the strategy ended with a profit, relative to the total number of trading days (both positive and negative).</p>
-                                    <p><strong>Recovery Factor:</strong> The ratio of the total net profit (equity) to the maximum drawdown. It indicates the strategy's ability to generate profit relative to its largest historical loss.</p>
-                                    <p><strong>Payoff:</strong> The ratio of the average gain on winning days to the average loss on losing days. For example, a payoff of 2 means that, on average, each winning day is twice as large as each losing day.</p>
-                                    <p><strong>Avg. Winning/Losing Day:</strong> The average financial result for days that ended with a profit (positive) or a loss (negative).</p>
-                                    <p><strong>Maximum Drawdown:</strong> The largest percentage or value drop in equity from a previous peak to a subsequent trough before a new peak is achieved.</p>
-                                    <p><strong>Largest Daily Gain/Loss:</strong> The largest financial profit or loss recorded in a single day.</p>
-                                    <p><strong>Longest Stagnation Period:</strong> The maximum number of consecutive days the strategy remained below a previously reached equity peak.</p>
-                                    <p><strong>Initial Balance (for calculations):</strong> The capital amount you set to contextualize metrics like VaR, Median, and Standard Deviation in monetary terms. By default, you can use the backtest's initial equity.</p>
+                                    <p><strong>Profit Factor:</strong> The ratio of gross profit (the sum of all winning days) to gross loss (the sum of all losing days).</p>
+                                    <p><strong>Win Rate:</strong> The percentage of days the strategy ended with a profit.</p>
+                                    <p><strong>Recovery Factor:</strong> The ratio of the total net profit (equity) to the maximum drawdown.</p>
+                                    <p><strong>Payoff:</strong> The ratio of the average gain on winning days to the average loss on losing days.</p>
+                                    <p><strong>Maximum Drawdown:</strong> The largest percentage or value drop in equity from a previous peak to a subsequent trough.</p>
+                                    <p><strong>Initial Balance (for calculations):</strong> The capital amount you set to contextualize metrics like VaR, Median, and Standard Deviation.</p>
                                     <p><strong>CAGR (Compound Annual Growth Rate):</strong> The compound annual growth rate of the strategy's equity over the analyzed period.</p>
                                     <p><strong>Average Drawdown:</strong> The average of the percentage drawdowns that occurred during the analysis period.</p>
-                                    image               <p><strong>Std. Dev. of Daily Returns:</strong> The standard deviation of the daily percentage returns. It indicates the volatility or dispersion of daily results around the daily average.</p>
-                                    <p><strong>Value at Risk (VaR 95%):</strong> An estimate of the maximum expected financial loss (with 95% confidence) in a single day, based on the defined "Initial Balance" and the history of daily returns.</p>
-                                    <p><strong>Median Monthly Profit:</strong> The median value of all monthly profits. 50% of months performed better than this value, and 50% performed worse. The value is shown in monetary terms and as a percentage of the "Initial Balance".</p>
-                                    <p><strong>Standard Deviation (Return & Drawdown):</strong>
-                                        <br /> - <em>Return:</em> The standard deviation of daily percentage returns, converted to a monetary value using the "Initial Balance".
-                                        <br /> - <em>Drawdown:</em> The standard deviation of individual percentage drawdowns, converted to a monetary value using the "Initial Balance". It indicates the variability in the magnitude of the drawdowns.
-                                    </p>
-                                    <p><strong>DalioBot Score:</strong> A proprietary metric (0-10) that assesses the overall quality of the strategy, considering the stability of the equity curve, the risk-return ratio, and the statistical significance of the results. Calculated only for individual bots.</p>
-
+                                    <p><strong>Std. Dev. of Daily Returns:</strong> The standard deviation of the daily percentage returns.</p>
+                                    <p><strong>Value at Risk (VaR 95%):</strong> An estimate of the maximum expected financial loss (with 95% confidence) in a single day.</p>
+                                    <p><strong>DalioBot Score:</strong> A proprietary metric (0-10) that assesses the overall quality of the strategy.</p>
                                 </div>
                             </div>
                         </div>
@@ -1983,7 +1846,7 @@ function DashboardContent() {
                                 </div>
                                 {(() => {
                                     const ddMaxAbs = Math.abs(drawdownInfo.valor);
-                                    const capitalAgressivo = ddMaxAbs > 0 ? ddMaxAbs : 1; // Avoid division by zero if ddMaxAbs is 0
+                                    const capitalAgressivo = ddMaxAbs > 0 ? ddMaxAbs : 1;
                                     const capitalModerado = capitalAgressivo * 2;
                                     const capitalConservador = capitalAgressivo * 5;
                                     const retornoAgressivo = mediaMensalEquity && capitalAgressivo ? (mediaMensalEquity / capitalAgressivo) * 100 : 0;
@@ -2019,8 +1882,7 @@ function DashboardContent() {
                                                     Estimated Average Monthly Return: <NumericFormat value={retornoConservador} displayType="text" decimalScale={2} fixedDecimalScale suffix="%" />
                                                 </p>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-3">* The suggested capital is an estimate based on the maximum drawdown from the backtest. Past performance does not guarantee future performance. Invest wisely.
-                                            </p>
+                                            <p className="text-xs text-gray-500 mt-3">* The suggested capital is an estimate based on the maximum drawdown from the backtest.</p>
                                         </div>
                                     );
                                 })()}
@@ -2030,31 +1892,24 @@ function DashboardContent() {
 
                     {showCorrelationPopup && (
                         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-2 sm:p-4">
-                            {/* [CORREÇÃO] Aplicado estilo dark mode ao container do popup */}
                             <div className="bg-slate-800 border border-slate-700 p-4 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-                                {/* [CORREÇÃO] Aplicado estilo dark mode ao header */}
                                 <div className="flex justify-between items-center mb-3 pb-3 border-b border-slate-700">
                                     <h2 className="text-lg md:text-xl font-bold text-white">Correlation of Strategies</h2>
                                     <button
                                         onClick={() => setShowCorrelationPopup(false)}
-                                        // [CORREÇÃO] Aplicado estilo dark mode ao botão de fechar
                                         className="text-gray-400 hover:text-white text-2xl leading-none p-1"
-                                        aria-label="Fechar popup de correlação"
                                     >
                                         &times;
                                     </button>
                                 </div>
 
-                                {/* [CORREÇÃO] Aplicado estilo dark mode à legenda */}
                                 <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
                                     <span className="font-semibold text-gray-300">Caption:</span>
-                                    {/* As cores da legenda (bg-red-500, etc.) foram mantidas pois são as mesmas usadas na função getCorrelationCellStyle */}
                                     <span className="flex items-center"><span className="inline-block w-3 h-3 rounded-full mr-1.5 bg-red-600"></span>High Negative</span>
                                     <span className="flex items-center"><span className="inline-block w-3 h-3 rounded-full mr-1.5 bg-green-600"></span>High Positive</span>
                                     <span className="flex items-center"><span className="inline-block w-3 h-3 rounded-full mr-1.5 bg-slate-700 border border-slate-600"></span>No Correlation</span>
                                 </div>
 
-                                {/* [CORREÇÃO] Aplicado estilo dark mode aos textos de status */}
                                 {loadingCorrelations && <div className="text-center py-10 text-gray-300">Calculating correlations...</div>}
                                 {correlationError && <div className="text-center py-10 text-red-500">{correlationError}</div>}
 
@@ -2063,7 +1918,6 @@ function DashboardContent() {
                                         <table className="min-w-full text-xs md:text-sm border-collapse">
                                             <thead>
                                                 <tr>
-                                                    {/* [CORREÇÃO] Aplicado estilo dark mode ao header da tabela */}
                                                     <th className="p-2 border border-slate-600 bg-slate-700 sticky top-0 left-0 z-20 min-w-[100px] text-left text-gray-300 font-semibold"></th>
                                                     {correlationStrategyNames.map(name => (
                                                         <th key={name} className="p-1 md:p-2 border border-slate-600 bg-slate-700 sticky top-0 z-10 text-gray-300 font-semibold align-bottom h-32 md:h-auto">
@@ -2077,14 +1931,12 @@ function DashboardContent() {
                                             <tbody>
                                                 {correlationStrategyNames.map((rowName, rowIndex) => (
                                                     <tr key={rowName}>
-                                                        {/* [CORREÇÃO] Aplicado estilo dark mode ao header da linha */}
                                                         <td className="p-2 border border-slate-600 bg-slate-700 sticky left-0 z-10 font-semibold text-gray-300 whitespace-nowrap min-w-[100px] text-left">
                                                             {shortenName(rowName, 15)}
                                                         </td>
                                                         {correlationStrategyNames.map((colName, colIndex) => (
                                                             <td
                                                                 key={`${rowName}-${colName}`}
-                                                                // [CORREÇÃO] Aplicada borda dark mode (a cor de fundo vem da função getCorrelationCellStyle)
                                                                 className={`p-2 border border-slate-600 text-center font-bold ${getCorrelationCellStyle(correlationMatrix[rowIndex]?.[colIndex])}`}
                                                             >
                                                                 {typeof correlationMatrix[rowIndex]?.[colIndex] === 'number' && !isNaN(correlationMatrix[rowIndex]?.[colIndex])
@@ -2099,11 +1951,9 @@ function DashboardContent() {
                                     </div>
                                 )}
 
-                                {/* [CORREÇÃO] Aplicado estilo dark mode ao footer */}
                                 <div className="mt-auto pt-4 flex justify-end border-t border-slate-700">
                                     <button
                                         onClick={() => setShowCorrelationPopup(false)}
-                                        // [CORREÇÃO] Aplicado estilo dark mode ao botão
                                         className="bg-slate-700 text-gray-200 px-4 py-2 rounded hover:bg-slate-600 text-sm"
                                     >
                                         To close
@@ -2126,22 +1976,18 @@ function DashboardContent() {
                                 <h2 className="text-xl font-semibold text-white mb-4 text-center">
                                     Accumulated Profit Curve
                                 </h2>
-                                {/* CONTÊINER FLEX COM ALTURA FIXA PARA EMPILHAR OS GRÁFICOS */}
                                 <div className="w-full flex flex-col" style={{ height: '70vh' }}>
 
-                                    {/* GRÁFICO 1: LUCRO PRINCIPAL (75% da altura) */}
                                     <div style={{ height: '75%' }}>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <LineChart data={chartData}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} />
 
-                                               
-
                                                 <XAxis
                                                     dataKey="timestamp"
-                                                    type="number"                      // ✅ Novo: eixo numérico
-                                                    scale="time"                       // ✅ Novo: eixo temporal real
-                                                    domain={['dataMin', 'dataMax']}    // ✅ Novo: cobre todo o período
+                                                    type="number"
+                                                    scale="time"
+                                                    domain={['dataMin', 'dataMax']}
                                                     tickFormatter={(timestamp) =>
                                                         new Date(timestamp).toLocaleDateString("pt-BR", {
                                                             day: "2-digit",
@@ -2153,22 +1999,8 @@ function DashboardContent() {
                                                     interval="preserveStartEnd"
                                                 />
 
-                                                <XAxis
-                                                    // 🔥 Corrigido: usar campo numérico `timestamp` no chartData
-                                                    dataKey="timestamp"
-                                                    tickFormatter={(timestamp) =>
-                                                        new Date(timestamp).toLocaleDateString("pt-BR", {
-                                                            day: "2-digit", month: "2-digit", year: "2-digit",
-                                                        })
-                                                    }
-                                                    tick={{ fontSize: 10, fill: chartTextFill }}
-                                                    interval="preserveStartEnd"
-                                                    hide={true}
-                                                />
-
-                                                {/* Y-AXIS PARA LUCRO (Eixo principal à esquerda) */}
                                                 <YAxis
-                                                    yAxisId="lucro" // ID: lucro
+                                                    yAxisId="lucro"
                                                     domain={['auto', 'auto']}
                                                     tickFormatter={(value) =>
                                                         `$ ${Number(value).toLocaleString('pt-BR', {
@@ -2206,22 +2038,24 @@ function DashboardContent() {
                                         </ResponsiveContainer>
                                     </div>
 
-                                    {/* GRÁFICO 2: DRAWDOWN (25% da altura, Alinhado) */}
                                     <div style={{ height: '25%' }}>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <LineChart data={chartData} margin={{ top: 0, right: 30, left: 30, bottom: 20 }}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
 
                                                 <XAxis
-                                                    dataKey="DATE"
-                                                    tickFormatter={(dateStr) =>
-                                                        new Date(dateStr).toLocaleDateString('pt-BR', {
-                                                            day: '2-digit',
-                                                            month: '2-digit',
-                                                            year: '2-digit'
+                                                    dataKey="timestamp"
+                                                    type="number"
+                                                    scale="time"
+                                                    domain={['dataMin', 'dataMax']}
+                                                    tickFormatter={(timestamp) =>
+                                                        new Date(timestamp).toLocaleDateString("pt-BR", {
+                                                            day: "2-digit",
+                                                            month: "2-digit",
+                                                            year: "2-digit",
                                                         })
                                                     }
-                                                    tick={{ fontSize: 12, fill: chartTextFill }}
+                                                    tick={{ fontSize: 10, fill: chartTextFill }}
                                                     interval="preserveStartEnd"
                                                 />
                                                 <YAxis
