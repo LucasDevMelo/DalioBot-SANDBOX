@@ -26,7 +26,7 @@ Este é o endpoint mais crítico do ecossistema DalioBot. Ele é responsável pe
 
 O Expert Advisor (EA) deve enviar um objeto JSON seguindo estritamente a estrutura abaixo a cada evento de negociação:
 
-
+```jsonc
 {
   "magic_number": 123456, // ID numérico único da estratégia no MT5
   "user_token": "firebase_uid...", // UID do usuário no Firebase (Token de Autenticação)
@@ -44,7 +44,7 @@ O Expert Advisor (EA) deve enviar um objeto JSON seguindo estritamente a estrutu
   "profit": 5.20, // Lucro líquido (apenas para ordens fechadas)
   "time": "2023-10-27 14:30:00" // Horário do Servidor (YYYY-MM-DD HH:MM:SS)
 }
-
+```
 
 ### Lógica de Processamento
 
